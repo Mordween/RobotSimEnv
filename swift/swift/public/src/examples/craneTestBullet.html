@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Crane</title>
+    <link rel="stylesheet" href="../css/examples.css?ver=1.0.0" />
+    <script src="../js/examples.js?ver=1.1.1"></script>
+    <script src="../lib/enable3d/enable3d.framework.0.25.4.min.Zup.js"></script>
+  </head>
+
+  <body>
+    <div id="info-text">
+      You can move the hoist using the <b>directional arrows</b> or the <b>classic keys</b>.
+      You can release the ball and then the rope by pressing the <b>Shift Right</b> key. <br>
+      Press the <b>P</b> key to bring the two plates together.
+      Or move them apart with the <b>M</b>
+      Press <b>Enter</b> to spawn a brick <br>
+      <b>UHJK</b> to move the arm
+    </div>
+    <script>
+      const { Project, Scene3D, PhysicsLoader, THREE, ExtendedObject3D } = ENABLE3D
+
+      const hoistPos =  new THREE.Vector3();
+      const ballPos =  new THREE.Vector3();
+      const ropePos =  new THREE.Vector3();
+
+
+      // The rope
+      const ropeWidth = 0.001
+      const ropeLength = 4
+      const ropeNumSegmentsZ = 1
+      const ropeNumSegmentsY = 50
+
+      // The hoist
+      const hoistHeight = 0.5
+
+      // Ball
+      const ballMass = 10;
+      const ballRadius = 0.6;
+
+
+      hoistPos.set(0, 0, 6.5)
+      ropePos.set(hoistPos.x, hoistPos.y, hoistPos.z-hoistHeight)
+      ballPos.set( ropePos.x, 5+ropePos.y, ropePos.z - ropeLength-ballRadius );
+
+
+      const ropeBodyUse = false;  
+
+      let value = Math.PI/4
+
+      class MainScene extends Scene3D {
+
+        async create() {
+
+          const { orbitControls } = await this.warpSpeed()
+
+          this.camera.position.set(-10, -10, 20)
+          orbitControls?.target.set(0, 2.5, 0)
+          this.camera.lookAt(0, 0, 0)
+
+          // enable physics debugging
+          this.physics.debug?.enable()
+
+          // world axis 
+          const axesHelper = new THREE.AxesHelper( 5 );
+          axesHelper.setColors(new THREE.Color(255, 0, 0), new THREE.Color(0, 255, 0), new THREE.Color(0, 0, 255))    // in order to know which axis is the right axis
+          this.scene.add( axesHelper );
+
+          
+          this.ball = this.physics.add.sphere({x:ballPos.x, y:ballPos.y, z:ballPos.z, radius:ballRadius })
+          this.ball.castShadow = true;
+          this.ball.receiveShadow = true;
+
+          this.ball.body.setFriction(0.8)
+
+          // hoist
+          this.hoist = this.add.box({ z: hoistPos.z, height: hoistHeight, width : 0.5 })
+          this.physics.add.existing(this.hoist, { collisionFlags: 2, mass: 155 })
+
+
+          const ropeGeometry = new THREE.PlaneGeometry(ropeWidth, ropeLength, ropeNumSegmentsZ, ropeNumSegmentsY)
+
+          const ropeMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff, side: THREE.DoubleSide })
+          this.rope = new THREE.Mesh(ropeGeometry, ropeMaterial)
+          this.rope.castShadow = true
+          this.rope.receiveShadow = true
+          this.scene.add(this.rope)
+
+          this.load.texture('/assets/img/grid.png').then(texture => {
+            texture.wrapS = THREE.RepeatWrapping
+            texture.wrapT = THREE.RepeatWrapping
+            texture.repeat.set(ropeNumSegmentsZ, ropeNumSegmentsY)
+            // @ts-ignore
+            this.rope.material.map = texture
+            // @ts-ignore
+            this.rope.material.needsUpdate = true
+          })
+
+          console.log("thisPhysics", this.physics.physicsWorld.getWorldInfo())
+          this.physics.physicsWorld.getWorldInfo().get_m_gravity().setX(0)
+          this.physics.physicsWorld.getWorldInfo().get_m_gravity().setY(0)
+          this.physics.physicsWorld.getWorldInfo().get_m_gravity().setZ(-9.81)      // FIX soft body Gravity
+          
+          console.log("thisPhysics", this.physics.physicsWorld.getWorldInfo())
+
+          const softBodyHelpers = new Ammo.btSoftBodyHelpers()
+          this.ropeSoftBody
+          
+          if (ropeBodyUse === true)   /*********************************** CreateRope used *********************************/
+          {
+            const ropeStart = new Ammo.btVector3( ropePos.x, ropePos.y, ropePos.z );
+            const ropeEnd = new Ammo.btVector3( ropePos.x, ropePos.y , ropePos.z - ropeLength );
+            this.ropeSoftBody = softBodyHelpers.CreateRope( 
+            this.physics.physicsWorld.getWorldInfo(), 
+            ropeStart, 
+            ropeEnd, 
+            ropeNumSegmentsY - 1, 
+            0 
+            );
+          }
+          else                      /*********************************** CreatePatch used *********************************/
+          {
+            const ropeCornerBR = new Ammo.btVector3(ropePos.x, ropePos.y + 0.5 * ropeWidth, ropePos.z - ropeLength)
+            const ropeCornerBL = new Ammo.btVector3(ropePos.x, ropePos.y - 0.5 * ropeWidth, ropePos.z - ropeLength)
+            const ropeCornerTR = new Ammo.btVector3(ropePos.x, ropePos.y + 0.5 * ropeWidth, ropePos.z)
+            const ropeCornerTL = new Ammo.btVector3(ropePos.x, ropePos.y - 0.5 * ropeWidth, ropePos.z)
+
+            this.ropeSoftBody = softBodyHelpers.CreatePatch(
+            this.physics.physicsWorld.getWorldInfo(),
+            ropeCornerBR,
+            ropeCornerBL,
+            ropeCornerTR,
+            ropeCornerTL,
+            ropeNumSegmentsZ + 1,
+            ropeNumSegmentsY + 1,
+            0,
+            true
+            );
+          }
+
+          const sbConfig = this.ropeSoftBody.get_m_cfg()
+          sbConfig.set_viterations(100)
+          sbConfig.set_piterations(100)       // the rope is no longer elastic
+
+          this.ropeSoftBody.setTotalMass(100, false)                  
+          // @ts-ignore
+          Ammo.castObject(this.ropeSoftBody, Ammo.btCollisionObject).getCollisionShape().setMargin(0.04) 
+          this.physics.physicsWorld.addSoftBody(this.ropeSoftBody, 1, -1)
+
+          console.log("this", this)
+
+          this.rope.userData.physicsBody = this.ropeSoftBody
+          
+          // Disable deactivation
+          this.ropeSoftBody.setActivationState(4)
+
+          
+          const armParams = {
+            mass: 100,
+            z: 2,
+            height: 2,
+            width: 0.2,
+            depth: 2,
+            collisionFlags: 2
+          }
+
+          const armLBParams = {
+            mass: 100,
+            z: 1,
+            height: 2,
+            width: 0.2,
+            depth: 0.2,
+            collisionFlags: 2
+          }
+
+          const addArm = x => {
+            const arm = this.physics.add.box({
+              ...armParams,
+              x
+            })
+            arm.body.setFriction(1)
+            arm.body.setDamping(0.5,0.5);
+            return arm
+          }
+          const addLBArm = x => {
+            const arm = this.physics.add.box({
+              ...armLBParams,
+              x
+            })
+            arm.position.x -= (x > 0) ? 0.2 : -0.2;
+            arm.body.setFriction(1)
+            arm.body.setDamping(0.5,0.5);
+            arm.body.needUpdate = true
+            return arm
+          }
+
+          this.leftArm = addArm(-2)
+          this.rightArm = addArm(2)
+          this.leftLBArm = addLBArm(-2)
+          this.rightLBArm = addLBArm(2)
+
+          // this.loadGLBFile('./object/grab.glb', 'leftGrab', 2, {x:ropePos.x + 0.2, y:ropePos.y, z:ropePos.z-ropeLength-0.25}, {x:Math.PI/2, y:Math.PI/4, z:0}, 2)
+          // this.loadGLBFile('./object/grab.glb', 'rightGrab', 2, {x:ropePos.x -0.2, y:ropePos.y, z:ropePos.z-ropeLength-0.25}, {x:Math.PI/2, y:-Math.PI/4, z:Math.PI}, 2)
+
+
+          // this.loadGLBFile('./object/plate.glb', 'leftPlate', 2, {x:ropePos.x + 0.2, y:ropePos.y, z:ropePos.z-ropeLength-0.25}, {x:Math.PI/2, y:Math.PI/4, z:0}, 3)
+          // this.loadGLBFile('./object/plate.glb', 'rightPlate', 2, {x:ropePos.x -0.2, y:ropePos.y, z:ropePos.z-ropeLength-0.25}, {x:Math.PI/2, y:-Math.PI/4, z:Math.PI}, 3)
+          await new Promise(r => setTimeout(r, 2000));    // wait 2 seconds 
+
+
+          // this.createHinge(this.rightGrab.body, this.rightPlate.body)
+          // this.createHinge(this.leftGrab.body, this.leftPlate.body)
+
+          // Glue the rope to the hoist
+          const influence = 1
+
+          if(ropeBodyUse == true) /*********************************** if CreateRope used *********************************/
+          {
+            this.ropeSoftBody.appendAnchor(0, this.hoist.body.ammo, false, influence)
+            // this.ropeSoftBody.appendAnchor(0, this.ball.body.ammo, true, influence)
+          }
+          else                    /*********************************** if CreatePatch used *********************************/
+          {
+            this.ropeSoftBody.appendAnchor(ropeNumSegmentsY*2, this.hoist.body.ammo, false, influence)
+            // this.ropeSoftBody.appendAnchor(0, this.ball.body.ammo, true, influence)
+
+            // this.ropeSoftBody.appendAnchor(0, this.leftGrab.body.ammo, false, 1)
+            // this.ropeSoftBody.appendAnchor(0, this.rightGrab.body.ammo, false, 1)
+          }
+
+
+          console.log(this.ropeSoftBody)
+          // console.log("node", this.ropeSoftBody.appendNode({  x:this.ropeSoftBody.m_nodes.at(0).m_x.x(), 
+          //                                                     y:this.ropeSoftBody.m_nodes.at(0).m_x.y(), 
+          //                                                     z:this.ropeSoftBody.m_nodes.at(0).m_x.z()}, 
+          //                                                     20
+          //                                                   ));
+
+          console.log("link", this.ropeSoftBody.appendLink())
+          this.ropeSoftBody.setFriction(1)
+          this.ropeSoftBody.setRollingFriction(1)
+
+          // this.createHinge()
+
+          this.brick = this.addBrick({x:0, y:0, z:0}, {x:0, y:0, z:0}, 4)
+          this.initInput()
+          
+          console.log("ropeSoftBody", this.ropeSoftBody.m_nodes.at(0).m_x.x(), this.ropeSoftBody.m_nodes.at(0).m_x.y(), this.ropeSoftBody.m_nodes.at(0).m_x.z())
+
+          this.rigidRope({x:5, y:5, z:20}, 20)
+
+
+        }
+
+        update(time) 
+        {
+
+          // console.log("ropeSoftBody", this.ropeSoftBody.m_nodes.at(0).m_x.x(), this.ropeSoftBody.m_nodes.at(0).m_x.y(), this.ropeSoftBody.m_nodes.at(0).m_x.z()) // end of the rope
+          this.hoist.position.setX(hoistPos.x); this.hoist.position.setY(hoistPos.y); this.hoist.position.setZ(hoistPos.z)
+          this.hoist.body.needUpdate = true;
+
+          /*** Friction with air ***/
+          this.ball.body.applyForceX(- 0.05* this.ball.body.velocity.x * 0.47 * this.physics.physicsWorld.getWorldInfo().air_density )
+          this.ball.body.applyForceY(- 0.05* this.ball.body.velocity.y * 0.47 * this.physics.physicsWorld.getWorldInfo().air_density )
+          this.ball.body.applyForceZ(- 0.05* this.ball.body.velocity.z * 0.47 * this.physics.physicsWorld.getWorldInfo().air_density )
+
+          /*** Friction with air ***/ 
+          this.brick.body.applyForceX(- 0.05* this.brick.body.velocity.x * 1 * this.physics.physicsWorld.getWorldInfo().air_density )
+          this.brick.body.applyForceY(- 0.05* this.brick.body.velocity.y * 1 * this.physics.physicsWorld.getWorldInfo().air_density )
+          this.brick.body.applyForceZ(- 0.05* this.brick.body.velocity.z * 1 * this.physics.physicsWorld.getWorldInfo().air_density )
+
+        }
+
+        loadGLBFile(url, name, scale, position = {x: number, y: number, z: number}, rotation = {x: number, y: number, z: number}, collisionFlags)
+        {
+          this.load.gltf(url).then(gltf => {
+
+            let object = new ExtendedObject3D()
+            const mesh = gltf.scene.children[0]
+            object.add(mesh)
+            object.position.set(position.x, position.y, position.z)
+            object.rotation.set(rotation.x, rotation.y, rotation.z)
+
+            object.scale.setX(scale); object.scale.setY(scale); object.scale.setZ(scale);
+            object.name = name;
+
+            this[name] = object
+            this.add.mesh(this[name])
+
+            this.physics.add.existing(this[name], { collisionFlags: collisionFlags, shape: 'mesh', mass : 1})    // mass = 0 => kinematics mesh
+            this[name].body.setFriction(1)
+
+          });
+        }
+
+        createHinge(master, slave)
+        {
+          this.grabHinge = this.physics.add.constraints.hinge(master, slave, {
+            pivotA: { x: 0, y: 0, z: 0 },
+            pivotB: { x: 0, y: 0, z: 0 },
+            axisA: { x: 0, y: 0, z: 1},
+            axisB: { x: 0, y: 0, z: -1} 
+          })
+        }
+
+        addBrick = (position = {x: number, y: number, z: number}, rotation = {x: number, y: number, z: number}, scale)=> {
+          const brick = this.physics.add.box({
+            mass: 10,
+            x: position.x,
+            y: position.y,
+            z: position.z,
+            height: 0.22*scale,
+            width: 0.105*scale,
+            depth: 0.06*scale,
+            collisionFlags: 0,
+            scale: scale,
+          })
+          brick.body.setFriction(1)
+          brick.body.setDamping(0.5,0.5);
+          return brick
+        }
+
+        rigidRope(position = {x: number, y: number, z: number}, numberOfPoint)
+        {
+          this.ball.length = numberOfPoint;
+          this.ball[0] = this.physics.add.sphere({
+          mass: 1,
+          x: position.x,
+          y: position.y,
+          z: position.z,
+          radius:0.1,
+          collisionFlags: 2,})
+
+            for(let i = 1; i< numberOfPoint; i++)
+            {
+                this.ball[i] = this.physics.add.sphere({
+                mass: 0.05,
+                x: position.x,
+                y: position.y,
+                z: position.z - 0.2*i,  
+                radius:0.1,
+                collisionFlags: 0,
+              })
+              this.constraint = this.physics.add.constraints.pointToPoint(this.ball[i-1].body, this.ball[i].body, {
+              // the offset from the center of each object
+              pivotA: { z: 0 },
+              pivotB: { z: 0.2  }
+              }) 
+            }
+        }
+
+        initInput()
+        {
+          window.addEventListener(
+            "keydown",
+            (event) => {
+              switch (event.code) {
+                case "KeyS":
+                case "ArrowDown":
+                  // Handle "back"
+                  hoistPos.y -= 0.1;
+                  this.ball[0].position.y -= 0.1;
+                  this.ball[0].body.needUpdate = true;
+                  break;
+                case "KeyW":
+                case "ArrowUp":
+                  // Handle "forward"
+                  hoistPos.y += 0.1;
+                  this.ball[0].position.y += 0.1;
+                  this.ball[0].body.needUpdate = true;
+                  break;
+                case "KeyA":
+                case "ArrowLeft":
+                  // Handle "turn left"
+                  hoistPos.x -= 0.1;
+                  this.ball[0].position.x -= 0.1;
+                  this.ball[0].body.needUpdate = true;
+                  break;
+                case "KeyD":
+                case "ArrowRight":
+                  // Handle "turn right"
+                  hoistPos.x += 0.1;
+                  this.ball[0].position.x += 0.1;
+                  this.ball[0].body.needUpdate = true;
+                  break;
+
+                case "Shift":
+                case "ShiftRight": 
+                  // deleate last anchor
+                  this.ropeSoftBody.m_anchors.pop_back()
+                  break;
+
+                case "p": 
+                case "KeyP": 
+
+                  this.leftArm.position.x += 0.1
+                  this.rightArm.position.x -= 0.1
+
+                  this.rightArm.body.needUpdate = true
+                  this.leftArm.body.needUpdate = true
+
+                  this.leftLBArm.position.x += 0.1
+                  this.rightLBArm.position.x -= 0.1
+
+                  this.rightLBArm.body.needUpdate = true
+                  this.leftLBArm.body.needUpdate = true
+
+                  // this.leftGrab.rotation.set(Math.PI/2, value+=0.01, 0)
+                  // this.rightGrab.rotation.set(Math.PI/2, -value, Math.PI)
+
+                  // this.leftGrab.body.needUpdate = true
+                  // this.rightGrab.body.needUpdate = true
+                  break;
+
+                case "m": 
+                case "Semicolon": 
+
+                  this.leftArm.position.x -= 0.1
+                  this.rightArm.position.x += 0.1
+
+                  this.rightArm.body.needUpdate = true
+                  this.leftArm.body.needUpdate = true
+
+                  this.leftLBArm.position.x -= 0.1
+                  this.rightLBArm.position.x += 0.1
+
+                  this.rightLBArm.body.needUpdate = true
+                  this.leftLBArm.body.needUpdate = true
+
+                  // this.leftGrab.rotation.set(Math.PI/2, value-=0.01, 0)
+                  // this.rightGrab.rotation.set(Math.PI/2, -value, Math.PI)
+
+                  // this.leftGrab.body.needUpdate = true
+                  // this.rightGrab.body.needUpdate = true
+
+                  break;
+
+                case "u": 
+                case "KeyU": 
+                  this.leftArm.position.y += 0.01
+                  this.rightArm.position.y += 0.01
+
+                  this.rightArm.body.needUpdate = true
+                  this.leftArm.body.needUpdate = true
+
+                  this.leftLBArm.position.y += 0.01
+                  this.rightLBArm.position.y += 0.01
+
+                  this.rightLBArm.body.needUpdate = true
+                  this.leftLBArm.body.needUpdate = true
+                  break;
+
+                case "j": 
+                case "KeyJ": 
+                  this.leftArm.position.y -= 0.01
+                  this.rightArm.position.y -= 0.01
+
+                  this.rightArm.body.needUpdate = true
+                  this.leftArm.body.needUpdate = true
+
+                  this.leftLBArm.position.y -= 0.01
+                  this.rightLBArm.position.y -= 0.01
+
+                  this.rightLBArm.body.needUpdate = true
+                  this.leftLBArm.body.needUpdate = true
+                  break;
+
+                case "h": 
+                case "KeyH": 
+                  this.leftArm.position.x -= 0.01
+                  this.rightArm.position.x -= 0.01
+
+                  this.rightArm.body.needUpdate = true
+                  this.leftArm.body.needUpdate = true
+
+                  this.leftLBArm.position.x -= 0.01
+                  this.rightLBArm.position.x -= 0.01
+
+                  this.rightLBArm.body.needUpdate = true
+                  this.leftLBArm.body.needUpdate = true
+                  break;
+
+                case "k": 
+                case "KeyK": 
+                  this.leftArm.position.x += 0.01
+                  this.rightArm.position.x += 0.01
+
+                  this.rightArm.body.needUpdate = true
+                  this.leftArm.body.needUpdate = true
+
+                  this.leftLBArm.position.x += 0.01
+                  this.rightLBArm.position.x += 0.01
+
+                  this.rightLBArm.body.needUpdate = true
+                  this.leftLBArm.body.needUpdate = true
+                  break;
+
+
+                case "Enter": 
+                  this.brick = this.addBrick(
+                    {
+                      x:this.ropeSoftBody.m_nodes.at((ropeBodyUse === true ) ? ropeNumSegmentsY : 0).m_x.x(), 
+                      y:this.ropeSoftBody.m_nodes.at((ropeBodyUse === true ) ? ropeNumSegmentsY : 0).m_x.y(), 
+                      z:this.ropeSoftBody.m_nodes.at((ropeBodyUse === true ) ? ropeNumSegmentsY : 0).m_x.z()-0.03*4
+                    }, 
+                    {
+                      x: 0,
+                      y: 0, 
+                      z: 0
+                    }, 
+                    4
+                  );
+                  this.ropeSoftBody.appendAnchor((ropeBodyUse === true ) ? ropeNumSegmentsY : 0, this.brick.body.ammo, false, 1)
+                break;
+
+                case "+":
+                case "NumpadAdd":
+                  console.log(this.ropeSoftBody);
+                  console.log(this.ropeSoftBody.m_nodes.at(ropeNumSegmentsY).m_x.dot());
+                  console.log(this.ropeSoftBody.m_nodes.at(ropeNumSegmentsY));
+                  console.log(this.ropeSoftBody.scale)
+                  // this.ropeSoftBody.scale(1,1,1.2);
+                  console.log("rope", this.rope)
+                  this.rope.scale.z += 1;
+                  this.rope.scale.x += 1;
+                  this.rope.scale.y += 1;
+                  // this.rope.scale.set(1,1,1.2)
+                  // this.rope.body.needUpdate = true
+                break;
+
+                case "-":
+                case "NumpadSubtract":
+                  console.log("-")
+                break;
+
+                case "NumpadEnter": 
+                this.brick = this.addBrick(
+                    {
+                      x:this.ball[this.ball.length-1].position.x, 
+                      y:this.ball[this.ball.length-1].position.y, 
+                      z:this.ball[this.ball.length-1].position.z-0.03*4
+                    }, 
+                    {
+                      x: 0,
+                      y: 0, 
+                      z: 0
+                    }, 
+                    4
+                  );
+                  this.physics.add.constraints.pointToPoint(this.ball[this.ball.length-1].body,this.brick.body, {
+                    // the offset from the center of each object
+                    pivotA: { z: -0.1 },
+                    pivotB: { z: 0.1  }
+                  })
+                break;
+              }
+            }
+          );
+        }
+
+
+      }
+
+      PhysicsLoader('../lib/ammo/kripken', () => new Project({ gravity: { x: 0, y: 0, z: -9.81 }, scenes: [MainScene], softBodies: true }))
+    </script>
+  </body>
+</html>

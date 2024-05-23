@@ -8,7 +8,8 @@ THREE.Object3D.DefaultUp.set(0, 0, 1);
 // import * as tr from './vendor/three.module.js'
 
 import {OrbitControls} from './vendor/examples/jsm/controls/OrbitControls.js'
-import {Robot, Shape, FPS, SimTime, Slider, Button, Label, Select, Checkbox, Radio} from './lib.js'
+import {Compound, Shape, FPS, SimTime, Slider, Button, Label, Select, Checkbox, Radio} from './lib.js'
+import { STLLoader } from './vendor/examples/jsm/loaders/STLLoader.js'
 // import { start } from 'repl';
 
 let fps = new FPS(document.getElementById('fps'));
@@ -18,13 +19,15 @@ let camera, scene, renderer, controls;
 
 // Array of all the robots in the scene
 let agents = [];
+let compounds = [];
 let shapes = [];
 let custom_elements = [];
 
 let connected = false;
 
 // Open the connection to python
-let port = parseInt(window.location.pathname.slice(1));
+//let port = parseInt(window.location.pathname.slice(1));
+let port = 53000;
 let ws = new WebSocket("ws://localhost:" + port + "/")
 
 let recorder = null;
@@ -33,17 +36,11 @@ let framerate = 20;
 let autoclose = true;
 
 
-// let one = new Label({id: "2", desc: "I am a new Label"})
-// let two = new Select({id: "3", desc: "Select Box", options: ["one", '2', 'fourt'], value: 1})
-// let three = new Button({id: "1", desc: "Hello"})
-// let four = new Checkbox({id: "4", desc: "Check Box", options: ["one", '2', 'fourt'], checked: [0, 's', 0]})
-// let five = new Radio({id: "5", desc: "Radio Buttons", options: ["one long", '2', 'fourt'], checked: 1})
-
-
 
 ws.onopen = function(event) {
 	connected = true;
 	ws.send('Connected');
+	console.log('Connection opened');
 	startSim(event.data);
 }
 
@@ -77,7 +74,15 @@ function init() {
 	
 	scene = new THREE.Scene();
 	// THREE.Object3D.DefaultUp.set(0, 0, 1);
-
+	// Function to load and add STL file to the scene
+	/*
+	
+	// Usage example:
+	// Assuming 'scene' is your Three.js scene and 'stlFilePath' is the path to your STL file
+	const stlFilePath = '/retrieve/home/simeon/Documents/digitalFabrication/FabAcademy2024/final project/cnc/z_carriage.stl';
+	console.log(stlFilePath)
+	addSTLToScene(scene, stlFilePath);
+	*/
 	renderer = new THREE.WebGLRenderer( {antialias: true });
 	// hrenderer = new HoloPlay.Renderer();
 	// hrenderer.webglRenderer = renderer;
@@ -106,7 +111,6 @@ function init() {
 	);
 	plane.receiveShadow = true;
 	scene.add( plane );
-
 	// Lights
 	scene.add( new THREE.HemisphereLight( 0x443333, 0x111122 ) );
 	addShadowedLight( 1, 1, 1, 0xffffff, 1.35 );
@@ -191,25 +195,30 @@ function stopRecording() {
 
 
 ws.onmessage = function (event) {
+	console.log(event.data)
 	let eventdata = JSON.parse(event.data)
 	let func = eventdata[0]
 	let data = eventdata[1]
-
-	if (func === 'robot') {
-		let id = agents.length;
-		let robot = new Robot(scene, data);
-		agents.push(robot);
-		ws.send(id);
-	} else if (func === 'remove_robot') {
-		let agent = agents[data]
-		agent.remove(scene)
-		renderer.renderLists.dispose();
-		agents[data] = null;
-		ws.send(0);
-	} else if (func === 'shape') {
-		let id = shapes.length;
-		let shape = new Shape(scene, data);
-		shapes.push(shape);
+	if (func === 'shape') {
+		let compound = new Compound(scene);
+		// Assuming data is a list of shapes
+		for (let shapeData of data) {
+			// Create a new shape object based on the shape data
+			
+			compound.add_shape(shapeData);
+			//let shape = new Shape(scene, shapeData);
+			 // Set the shape's id to the current length of the shapes array
+			 // Add the shape to the shapes array
+		}
+		
+		compound.id = compounds.length;
+		compounds.push(compound);
+		console.log("Compound: ", compound)
+		// Send a confirmation message back to the server
+		ws.send(compound.id); // Send the index of the first newly added shape
+	
+	} else if (func === 'shape_mounted') {
+		let id = 1;
 		ws.send(id);
 	} else if (func === 'remove_shape') {
 		let shape = shapes[data]
@@ -217,22 +226,23 @@ ws.onmessage = function (event) {
 		renderer.renderLists.dispose();
 		shapes[data] = null;
 		ws.send(0);
-	} else if (func === 'robot_poses') {
-		let id = data[0];
-		let poses = data[1];
-		agents[id].set_poses(poses);
-		ws.send(id);
 	} else if (func === 'shape_poses') {
-		let id = data[0];
-		let poses = data[1];
-		shapes[id].set_poses(poses);
-		ws.send(id);
+		for (let shapeData of data) {
+			let id = shapeData[0];
+			let poses = shapeData[1];
+			console.log("id: ", id)
+			console.log("poses: ", poses)
+			compounds[id].set_poses(poses);
+		}
+		let jsonString = JSON.stringify([]);
+		ws.send(jsonString);
 	} else if (func === 'is_loaded') {
 		let loaded = agents[data].isLoaded();
 		ws.send(loaded);
 	} else if (func === 'sim_time') {
 		sim_time.display(parseFloat(data));
-		ws.send(0);
+		let jsonString = JSON.stringify([]);
+		ws.send(jsonString);
 	} else if (func === 'start_recording') {
 		startRecording(parseFloat(data[0]), data[1], data[2]);
 		ws.send(0);

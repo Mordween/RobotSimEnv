@@ -135,7 +135,9 @@ def start_servers(
                     print("\nCould not open specified browser, using default instead\n")
                     wb.open_new_tab(url)
         else:
-            wb.open_new_tab(url)
+            wb.register('chrome', None, wb.BackgroundBrowser('/usr/bin/google-chrome'))
+            wb.get('chrome').open_new_tab(url)
+            #wb.
 
     if comms == "rtc":
         if not RTC:
@@ -298,17 +300,20 @@ class SwiftSocket:
                 started = True
             except OSError:
                 port += 1
-
+        print(port)
         self.inq.put(port)
         self.loop.run_forever()
 
     async def register(self, websocket):
+        print("Registering")
         self.USERS.add(websocket)
 
     async def serve(self, websocket, path):
+        print("Trying to serve")
         # Initial connection handshake
         await self.register(websocket)
         recieved = await websocket.recv()
+        print("registered", recieved)
         self.inq.put(recieved)
 
         # Now onto send, recieve cycle
@@ -322,7 +327,9 @@ class SwiftSocket:
 
     async def expect_message(self, websocket, expected):
         if expected:
+            print("Expecting Message")
             recieved = await websocket.recv()
+            print("Recieved Message")
             self.inq.put(recieved)
 
     async def producer(self):
@@ -336,7 +343,8 @@ class SwiftServer:
         self.inq = inq
         self.run = run
 
-        root_dir = Path(sw.__file__).parent / "out"
+        root_dir = Path(sw.__file__).parent / "public"
+        print(root_dir)
 
         class MyHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
             def __init__(self, *args, **kwargs):
@@ -386,8 +394,9 @@ class SwiftServer:
                 elif self.path == "/?" + str(socket_port):
                     self.path = "index.html"
                 elif self.path.startswith("/retrieve/"):
-                    # print(f"Retrieving file: {self.path[10:]}")
-                    self.path = urllib.parse.unquote(self.path[10:])
+                    print(f"Retrieving file: {self.path[10:]}")
+                    self.path = urllib.parse.unquote(self.path[9:])
+                    print(self.path)
                     self.send_file_via_real_path()
                     return
 
@@ -396,6 +405,7 @@ class SwiftServer:
                 try:
                     http.server.SimpleHTTPRequestHandler.do_GET(self)
                 except BrokenPipeError:
+                    print("Broken Pipe Error")
                     # After killing this error will pop up but it's of no use
                     # to the user
                     pass

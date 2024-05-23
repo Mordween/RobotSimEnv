@@ -55,6 +55,7 @@ class Swift:
     """
 
     def __init__(self, _dev=False):
+        print("Swift backend initialised")
         self.outq = Queue()
         self.inq = Queue()
 
@@ -254,7 +255,7 @@ class Swift:
                 self._step_elements()
 
                 events = self._draw_all()
-                # print(events)
+                print(events)
 
                 # Process GUI events
                 self.process_events(events)
@@ -537,6 +538,7 @@ class Swift:
         process updates from Swift.
         """
         # events = self._send_socket('check_elements')
+        print(self.elements)
         for event in events:
             self.elements[event].update(events[event])
             self.elements[event].cb(events[event])
@@ -643,7 +645,7 @@ class Swift:
         Sends the transform of every simulated object in the scene
         Recieves bacl a list of events which has occured
         """
-
+        print("draw all", len(self.swift_objects))
         msg = []
 
         for i in range(len(self.swift_objects)):

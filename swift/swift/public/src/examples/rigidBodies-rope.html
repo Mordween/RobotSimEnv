@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>rogidBodies rope</title>
+    <link rel="stylesheet" href="../css/examples.css?ver=1.0.0" />
+    <script src="../js/examples.js?ver=1.1.1"></script>
+    <script src="../lib/enable3d/enable3d.framework.0.25.4.min.Zup.js"></script>
+  </head>
+
+  <body>
+    <div id="info-text">
+      You can move the rope using the <b>directional arrows</b> or the <b>classic keys</b>. <br>
+      Left side : Point to point constraint
+      Middle : Twist constraint
+      Right side : Dof constraint
+    </div>
+    <script>
+      const { Project, Scene3D, PhysicsLoader, THREE, ExtendedObject3D } = ENABLE3D
+      let length = 20;
+
+      class MainScene extends Scene3D {
+
+        async create() {
+
+          const { orbitControls } = await this.warpSpeed()
+
+          this.camera.position.set(-5, -10, 40)
+          orbitControls?.target.set(0, 2.5, 0)
+          this.camera.lookAt(0, 10, 0)
+
+          // enable physics debugging
+          this.physics.debug?.enable()
+
+          // world axis 
+          const axesHelper = new THREE.AxesHelper( 5 );
+          axesHelper.setColors(new THREE.Color(255, 0, 0), new THREE.Color(0, 255, 0), new THREE.Color(0, 0, 255))    // in order to know which axis is the right axis
+          this.scene.add( axesHelper );
+
+          this.ball = this.physics.add.sphere({x:0, y:0, z:0, radius:0.001 })
+          this.ball1 = this.ball.clone()
+          this.ball2 = this.ball.clone()
+          this.brick = this.addBrick({x:0, y:0, z:0}, {x:0, y:0, z:0}, 4)
+
+          this.initInput()
+
+            //   this.rigidRope({x:5, y:5, z:20}, 20)
+
+            
+            this.ball = []
+            this.ball[0] = this.rigidDOFRope({x:5, y:-5, z:20}, length, 0.01)
+            this.ball[1] = this.rigidTwistRope({x:0, y:-5, z:20}, length, 0.01)
+            this.ball[2] = this.rigidP2PRope({x:-5, y:-5, z:20}, length, 0.01)
+
+            this.ball[3] = this.rigidDOFRope({x:5, y:0, z:20}, length, 0.05)
+            this.ball[4] = this.rigidTwistRope({x:0, y:0, z:20}, length, 0.05)
+            this.ball[5] = this.rigidP2PRope({x:-5, y:0, z:20}, length, 0.05)
+
+            this.ball[6] = this.rigidDOFRope({x:5, y:5, z:20}, length, 0.1)
+            this.ball[7] = this.rigidTwistRope({x:0, y:5, z:20}, length, 0.1)
+            this.ball[8] = this.rigidP2PRope({x:-5, y:5, z:20}, length, 0.1)
+         
+          console.log(this)
+        }
+
+
+        update(time) 
+        {
+
+          /*** Friction with air ***/ // just applied to the last brick 
+          this.brick.body.applyForceX(- 0.05* this.brick.body.velocity.x * 1 * this.physics.physicsWorld.getWorldInfo().air_density )
+          this.brick.body.applyForceY(- 0.05* this.brick.body.velocity.y * 1 * this.physics.physicsWorld.getWorldInfo().air_density )
+          this.brick.body.applyForceZ(- 0.05* this.brick.body.velocity.z * 1 * this.physics.physicsWorld.getWorldInfo().air_density )
+
+        }
+
+        addBrick = (position = {x: number, y: number, z: number}, rotation = {x: number, y: number, z: number}, scale)=> {
+          const brick = this.physics.add.box({
+            mass: 10,
+            x: position.x,
+            y: position.y,
+            z: position.z,
+            height: 0.22*scale,
+            width: 0.105*scale,
+            depth: 0.06*scale,
+            collisionFlags: 0,
+            scale: scale,
+          })
+          brick.body.setFriction(1)
+          brick.body.setDamping(0.5,0.5);
+          return brick
+        }
+
+        rigidTwistRope(position = {x: number, y: number, z: number}, numberOfPoint, radius)
+        {
+          let ball = []
+          ball[0] = this.physics.add.sphere({
+          mass: 1,
+          x: position.x,
+          y: position.y,
+          z: position.z,
+          radius:radius,
+          collisionFlags: 2,})
+
+            for(let i = 1; i< numberOfPoint; i++)
+            {
+                ball[i] = this.physics.add.sphere({
+                mass: 0.05,
+                x: position.x,
+                y: position.y,
+                z: position.z - 0.2*i,  
+                radius:radius,
+                collisionFlags: 0,
+              })
+              this.constraint = this.physics.add.constraints.coneTwist(ball[i-1].body, ball[i].body, {
+              frameA: { x: 0, y: 0, z: -0.1 },
+              frameB: { x: 0, y: 0, z: 0.1 }
+                })
+               this.constraint.setAngularOnly(true)
+            }
+            console.log("twist", this.constraint)
+            return ball
+        }
+
+        rigidDOFRope(position = {x: number, y: number, z: number}, numberOfPoint, radius)
+        {
+          let ball = []
+          ball[0] = this.physics.add.sphere({
+          mass: 1,
+          x: position.x,
+          y: position.y,
+          z: position.z,
+          radius:radius,
+          collisionFlags: 2,})
+
+            for(let i = 1; i< numberOfPoint; i++)
+            {
+                ball[i] = this.physics.add.sphere({
+                mass: 0.05,
+                x: position.x,
+                y: position.y,
+                z: position.z - 0.2*i,  
+                radius:radius,
+                collisionFlags: 0,
+              })
+              this.constraint = this.physics.add.constraints.dof(ball[i-1].body, ball[i].body,  { center: true })
+              this.constraint.setLinearLowerLimit(0)
+              this.constraint.setLinearUpperLimit(0)
+            }
+            console.log("dof", this.constraint)
+            return ball
+        }
+
+        rigidP2PRope(position = {x: number, y: number, z: number}, numberOfPoint, radius)
+        {
+          let ball = []
+          ball[0] = this.physics.add.sphere({
+          mass: 1,
+          x: position.x,
+          y: position.y,
+          z: position.z,
+          radius:radius,
+          collisionFlags: 2,})
+
+            for(let i = 1; i< numberOfPoint; i++)
+            {
+                ball[i] = this.physics.add.sphere({
+                mass: 0.05,
+                x: position.x,
+                y: position.y,
+                z: position.z - 0.2*i,  
+                radius:radius,
+                collisionFlags: 0,
+              })
+              this.constraint = this.physics.add.constraints.pointToPoint(ball[i-1].body, ball[i].body, {
+              // the offset from the center of each object
+              pivotA: { z: 0 },
+              pivotB: { z: 0.2  }
+              }) 
+            }
+            console.log("p2p", this.constraint)
+            return ball
+        }
+
+        initInput()
+        {
+          window.addEventListener(
+            "keydown",
+            (event) => {
+              switch (event.code) {
+                case "KeyS":
+                case "ArrowDown":
+                  // Handle "back"
+                  for(let i = 0; i<9; i++)
+                  {
+                    this.ball[i][0].position.y -= 0.1;
+                    this.ball[i][0].body.needUpdate = true;
+                  }
+
+                  break;
+                case "KeyW":
+                case "ArrowUp":
+                  // Handle "forward"
+                  for(let i = 0; i<9; i++)
+                  {
+                    this.ball[i][0].position.y += 0.1;
+                    this.ball[i][0].body.needUpdate = true;
+                  }
+
+                  break;
+                case "KeyA":
+                case "ArrowLeft":
+                  // Handle "turn left"
+                  for(let i = 0; i<9; i++)
+                  {
+                    this.ball[i][0].position.x -= 0.1;
+                    this.ball[i][0].body.needUpdate = true;
+                  }
+
+                  break;
+                case "KeyD":
+                case "ArrowRight":
+                  // Handle "turn right"
+                  for(let i = 0; i<9; i++)
+                  {
+                    this.ball[i][0].position.x += 0.1;
+                    this.ball[i][0].body.needUpdate = true;
+                  }
+
+                  break;
+
+                case "NumpadEnter": 
+                for(let i = 0; i<9; i++)
+                {
+                    this.brick = this.addBrick(
+                    {
+                      x:this.ball[i][length-1].position.x, 
+                      y:this.ball[i][length-1].position.y, 
+                      z:this.ball[i][length-1].position.z-0.03*4
+                    }, 
+                    {
+                      x: 0,
+                      y: 0, 
+                      z: 0
+                    }, 
+                    4
+                  );
+                  this.physics.add.constraints.pointToPoint(this.ball[i][length-1].body,this.brick.body, {
+                    // the offset from the center of each object
+                    pivotA: { z: -0.1 },
+                    pivotB: { z: 0.1  }
+                  })
+                }
+
+                break;
+              }
+            }
+          );
+        }
+
+
+      }
+
+      PhysicsLoader('../lib/ammo/kripken', () => new Project({ gravity: { x: 0, y: 0, z: -9.81 }, scenes: [MainScene], softBodies: true }))
+    </script>
+  </body>
+</html>
