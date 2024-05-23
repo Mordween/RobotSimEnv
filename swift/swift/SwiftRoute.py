@@ -135,9 +135,7 @@ def start_servers(
                     print("\nCould not open specified browser, using default instead\n")
                     wb.open_new_tab(url)
         else:
-            wb.register('chrome', None, wb.BackgroundBrowser('/usr/bin/google-chrome'))
-            wb.get('chrome').open_new_tab(url)
-            #wb.
+            wb.open_new_tab(url)
 
     if comms == "rtc":
         if not RTC:
@@ -327,9 +325,9 @@ class SwiftSocket:
 
     async def expect_message(self, websocket, expected):
         if expected:
-            print("Expecting Message")
+            #print("Expecting Message")
             recieved = await websocket.recv()
-            print("Recieved Message")
+            #print("Recieved Message")
             self.inq.put(recieved)
 
     async def producer(self):

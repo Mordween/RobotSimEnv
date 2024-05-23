@@ -35,7 +35,7 @@ class RobotControl():
 if __name__ == "__main__":  # pragma nocover
 
     env = swift.Swift()
-    env.launch(realtime = True)
+    env.launch(realtime = True)   # Queue error
 
     robot = rtb.models.Lite6()
 
