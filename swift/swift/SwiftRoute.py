@@ -341,7 +341,7 @@ class SwiftServer:
         self.inq = inq
         self.run = run
 
-        root_dir = Path(sw.__file__).parent / "out"
+        root_dir = Path(sw.__file__).parent / "public"
         print(root_dir)
 
         class MyHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
