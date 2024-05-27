@@ -105,7 +105,9 @@ function loadMesh(ob, scene, cb) {
     }
 
     if (ext == 'dae') {
-        let loader = daeloader.load(ob.filename, function(collada) {
+        // Construct the URL to retrieve the STL file
+        const daeFilePath = `/retrieve/${ob.filename}`;
+        let loader = daeloader.load(daeFilePath, function(collada) {
 
             let mesh = collada.scene;
             mesh.position.set(ob.t[0], ob.t[1], ob.t[2]);
@@ -128,28 +130,32 @@ function loadMesh(ob, scene, cb) {
             cb();
         });
     } else if (ext == 'stl') {
-        let loader = stlloader.load(ob.filename, function(geometry) {
-
+    
+        // Construct the URL to retrieve the STL file
+        const stlFilePath = `/retrieve/${ob.filename}`;
+    
+        // Load the STL file using STLLoader
+        let loader = stlloader.load(stlFilePath, function (geometry) {
+    
             let material = new THREE.MeshPhongMaterial({
                 color: new THREE.Color(
                     ob.color[0], ob.color[1], ob.color[2]),
-                    specular: 0x111111, shininess: 200
+                specular: 0x111111, shininess: 200
             });
-
-            material.transparent = true;
+    
+            //material.transparent = true;
             material.opacity = ob.color[3];
-
+    
             let mesh = new THREE.Mesh(geometry, material);
-
+    
             mesh.scale.set(ob.scale[0], ob.scale[1], ob.scale[2]);
             mesh.position.set(ob.t[0], ob.t[1], ob.t[2]);
-            
-            let quat_o = new THREE.Quaternion(ob.q[1], ob.q[2], ob.q[3], ob.q[0]);
+    
+            let quat_o = new THREE.Quaternion(ob.q[0], ob.q[1], ob.q[2], ob.q[3]);
             mesh.setRotationFromQuaternion(quat_o);
     
             mesh.castShadow = true;
             mesh.receiveShadow = true;
-    
             scene.add(mesh);
             ob['mesh'] = mesh;
             ob['loaded'] = true;
@@ -165,7 +171,6 @@ function loadMesh(ob, scene, cb) {
 
                 objloader.load(ob.filename,
                     function (object) {
-                        console.log(object)
 
                         object.traverse( function (child) {
                             if ( child.isMesh ) {
@@ -364,7 +369,7 @@ class Robot{
                 for (let j = 0; j < this.ob.links[i].geometry.length; j++) {
                     let t = poses.links[i].geometry[j].t;
                     let q = poses.links[i].geometry[j].q;
-                    let quat = new THREE.Quaternion(q[1], q[2], q[3], q[0]);
+                    let quat = new THREE.Quaternion(q[0], q[1], q[2], q[3],);
                     this.ob.links[i].geometry[j].mesh.position.set(t[0], t[1], t[2]);
                     this.ob.links[i].geometry[j].mesh.setRotationFromQuaternion(quat);
                 }
@@ -433,33 +438,63 @@ class Robot{
 }
 
 
-class Shape{
+class Shape {
     constructor(scene, ob) {
-        this.ob = ob
-        let color = Math.random() * 0xffffff;
-        this.loaded = 0;
-
-        let cb = () => {
-            this.loaded = 1;
-        }
-
-        load(ob, scene, color, cb);
+      this.ob = ob;
+      let color = Math.random() * 0xffffff;
+      this.loaded = 0;
+      let cb = () => {
+        this.loaded = 1;
+      };
+      console.log("loaded");
+      load(ob, scene, color, cb);
     }
-
-    set_poses(pose) {
-        let t = pose.t;
-        let q = pose.q;
-        let quat = new THREE.Quaternion(q[1], q[2], q[3], q[0]);
+  
+    set_pose(pose) {
+      console.log("setting pose", pose);
+      let t = pose.t;
+      let q = pose.q;
+      console.log(q);
+      let quat = new THREE.Quaternion(q[0], q[1], q[2], q[3]);
+      try {
         this.ob.mesh.position.set(t[0], t[1], t[2]);
         this.ob.mesh.setRotationFromQuaternion(quat);
+      } catch (error) {
+        console.log("skipping step", error);
+      }
     }
-
+  
     remove(scene) {
-        this.ob.mesh.geometry.dispose();
-        this.ob.mesh.material.dispose();
-        scene.remove(this.ob.mesh);
+      this.ob.mesh.geometry.dispose();
+      this.ob.mesh.material.dispose();
+      scene.remove(this.ob.mesh);
     }
-}
+  }
+  
+class Compound {
+    constructor(scene) {
+      this.shapes = [];
+      this.scene = scene;
+    }
+  
+    add_shape(ob) {
+      let shape = new Shape(this.scene, ob);
+      this.shapes.push(shape);
+    }
+  
+    set_poses(poses) {
+      for (let i = 0; i < this.shapes.length; i++) {
+        this.shapes[i].set_pose(poses[i]);
+      }
+    }
+  
+    remove() {
+      for (let shape of this.shapes) {
+        shape.remove(this.scene);
+      }
+      this.shapes = [];
+    }
+  }
 
 
 class FPS {
@@ -850,4 +885,4 @@ class Radio {
 
 
 
-export {Robot, Shape, FPS, SimTime, Slider, Button, Label, Select, Checkbox, Radio};
+export {Robot, Compound, Shape, FPS, SimTime, Slider, Button, Label, Select, Checkbox, Radio};
