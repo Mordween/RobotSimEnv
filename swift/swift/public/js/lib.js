@@ -133,7 +133,7 @@ function loadMesh(ob, scene, cb) {
     
         // Construct the URL to retrieve the STL file
         const stlFilePath = `/retrieve/${ob.filename}`;
-    
+        
         // Load the STL file using STLLoader
         let loader = stlloader.load(stlFilePath, function (geometry) {
     
@@ -153,7 +153,7 @@ function loadMesh(ob, scene, cb) {
     
             let quat_o = new THREE.Quaternion(ob.q[0], ob.q[1], ob.q[2], ob.q[3]);
             mesh.setRotationFromQuaternion(quat_o);
-    
+            console.log("mesh", mesh)
             mesh.castShadow = true;
             mesh.receiveShadow = true;
             scene.add(mesh);

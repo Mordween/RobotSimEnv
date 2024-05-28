@@ -45,12 +45,13 @@ if __name__ == "__main__":  # pragma nocover
     positionY = [-0.2, -0.2, 0.2]
     positionZ = [0.05, 0.4, 0.2]
     step = [50, 50, 50]
-
+    """
     for position in range(len(step)):
         rob.move(positionX[position], positionY[position], positionZ[position], step[position])
         rob.pause(1)
-        
+    """    
     rob.pause(10)
+    env.hold()
 
 
 
