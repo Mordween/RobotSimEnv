@@ -352,7 +352,6 @@ class Swift:
         # id = add(robot) adds the robot to the external environment. robot
         # must be of an appropriate class. This adds a robot object to a
         # list of robots which will act upon the step() method being called.
-
         if isinstance(ob, Shape):
             ob._propogate_scene_tree()
             ob._added_to_swift = True
@@ -379,7 +378,6 @@ class Swift:
             self.elementid += 1
             self.elements[str(id)] = ob
             ob._id = id
-
             self._send_socket("element", ob.to_dict())
         elif isinstance(ob, rtb.Robot):
 
@@ -401,8 +399,9 @@ class Swift:
                 robob = ob._to_dict(
                     robot_alpha=robot_alpha, collision_alpha=collision_alpha
                 )
-                id = self._send_socket("shape", robob)
 
+                id = self._send_socket("shape", robob)
+                print(robob)
                 while not int(self._send_socket("shape_mounted", [id, len(robob)])):
                     time.sleep(0.1)
 
@@ -416,6 +415,7 @@ class Swift:
                 "collision_alpha": collision_alpha,
                 "readonly": readonly,
             }
+            time.sleep(10)
 
             return int(id)
 

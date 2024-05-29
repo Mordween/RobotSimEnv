@@ -96,6 +96,8 @@ function loadCylinder(ob, scene, color, cb) {
 
 function loadMesh(ob, scene, cb) {
 
+    console.log("scene from loadMesh", scene)
+
     let ext = ob.filename.split('.').pop();
 
     if (navigator.appVersion.indexOf("Win") != -1) {
@@ -156,7 +158,8 @@ function loadMesh(ob, scene, cb) {
             console.log("mesh", mesh)
             mesh.castShadow = true;
             mesh.receiveShadow = true;
-            scene.add(mesh);
+            console.log("scene.add error", scene)
+            scene.physics.addExisting(mesh);                        // BUG Fixed scene.add is not a fonction
             ob['mesh'] = mesh;
             ob['loaded'] = true;
             cb();
@@ -326,7 +329,6 @@ function loadMesh(ob, scene, cb) {
 
 class Robot{
     constructor(scene, ob) {
-
         this.ob = ob;
         this.promised = 0;
         this.loaded = 0;
@@ -446,7 +448,8 @@ class Shape {
       let cb = () => {
         this.loaded = 1;
       };
-      console.log("loaded");
+      console.log("loaded", scene);
+
       load(ob, scene, color, cb);
     }
   

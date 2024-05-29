@@ -6,6 +6,7 @@ import { STLLoader } from './vendor/examples/jsm/loaders/STLLoader.js'
 let fps = new FPS(document.getElementById('fps'));
 let sim_time = new SimTime(document.getElementById('sim-time'));
 
+
 let camera, scene, renderer, controls;
 
 // Array of all the robots in the scene
@@ -20,141 +21,147 @@ let recording = false;
 let framerate = 20;
 let autoclose = true;
 
-
 // Open the connection to python
 //let port = parseInt(window.location.pathname.slice(1));
-let port = 53000;
-let ws = new WebSocket("ws://localhost:" + port + "/")
-let connected = false;
 
-ws.onopen = function(event) {
-	connected = true;
-	ws.send('Connected');
-	console.log('Connection opened');
-	startSim(event.data);
-}
+class WebSocketCom {
+	constructor(port) {
+		this.port = port;
+		this.ws = new WebSocket("ws://localhost:" + this.port + "/");
+		this.connected = false;
 
-
-ws.onclose = function(event) {
-
-	if (recording) {
-		stopRecording();
+		// Bind the context of 'this' to the class instance for these methods
+		this.onOpen = this.onOpen.bind(this);
+		this.onClose = this.onClose.bind(this);
+		this.onMessage = this.onMessage.bind(this);
 	}
 
-	if (autoclose) {
-		setTimeout(
-			function() {
+	Init() {
+		this.ws.onopen = this.onOpen;
+		this.ws.onclose = this.onClose;
+		this.ws.onmessage = this.onMessage;
+	}
+
+	onOpen(event) {
+		this.connected = true;
+		this.ws.send('Connected');
+		console.log('Connection opened');
+		startSim(event.data);
+	}
+
+	onClose(event) {
+		if (recording) {
+			stopRecording();
+		}
+
+		if (autoclose) {
+			setTimeout(() => {
 				window.close();
 			}, 5000);
+		}
+	}
+
+	onMessage(event) {
+		console.log(event.data);
+		let eventdata = JSON.parse(event.data);
+		let func = eventdata[0];
+		let data = eventdata[1];
+		console.log("data", data)
+		if (func === 'shape') {
+			let compound = new Compound(scene);
+			// Assuming data is a list of shapes
+			for (let shapeData of data) {
+				compound.add_shape(shapeData);
+			}
+			
+			compound.id = compounds.length;
+			compounds.push(compound);
+			console.log("Compound: ", compound);
+			this.ws.send(compound.id); // Send the index of the first newly added shape
+
+		} else if (func === 'shape_mounted') {
+			let id = 1;
+			this.ws.send(id);
+		} else if (func === 'remove_shape') {
+			let shape = shapes[data];
+			shape.remove(scene);
+			renderer.renderLists.dispose();
+			shapes[data] = null;
+			this.ws.send(0);
+		} else if (func === 'shape_poses') {
+			for (let shapeData of data) {
+				let id = shapeData[0];
+				let poses = shapeData[1];
+				console.log("id: ", id);
+				console.log("poses: ", poses);
+				compounds[id].set_poses(poses);
+			}
+			let jsonString = JSON.stringify([]);
+			this.ws.send(jsonString);
+		} else if (func === 'is_loaded') {
+			let loaded = agents[data].isLoaded();
+			this.ws.send(loaded);
+		} else if (func === 'sim_time') {
+			sim_time.display(parseFloat(data));
+			let jsonString = JSON.stringify([]);
+			this.ws.send(jsonString);
+		} else if (func === 'start_recording') {
+			startRecording(parseFloat(data[0]), data[1], data[2]);
+			this.ws.send(0);
+		} else if (func === 'stop_recording') {
+			stopRecording();
+			
+			setTimeout(() => {
+				this.ws.send(0);
+			}, 5000);
+		} else if (func === 'add_element') {
+			let element = data.element;
+
+			if (element === 'slider') {
+				custom_elements.push(new Slider(data));
+			} else if (element === 'button') {
+				custom_elements.push(new Button(data));
+			} else if (element === 'label') {
+				custom_elements.push(new Label(data));
+			} else if (element === 'select') {
+				custom_elements.push(new Select(data));
+			} else if (element === 'checkbox') {
+				custom_elements.push(new Checkbox(data));
+			} else if (element === 'radio') {
+				custom_elements.push(new Radio(data));
+			}
+			this.ws.send(0);
+		} else if (func === 'check_elements') {
+			let ret = {};
+
+			for (let i = 0; i < custom_elements.length; i++) {
+				if (custom_elements[i].changed === true) {
+					ret[custom_elements[i].id] = custom_elements[i].data;
+					custom_elements[i].changed = false;
+				}
+			}
+			this.ws.send(JSON.stringify(ret));
+		} else if (func === 'update_element') {
+			let id = data.id;
+
+			for (let i = 0; i < custom_elements.length; i++) {
+				if (custom_elements[i].id === id) {
+					custom_elements[i].update(data);
+					break;
+				}
+			}
+
+			this.ws.send(0);
+		}
 	}
 }
 
-
-ws.onmessage = function (event) {
-console.log("bahahahahahahahaaah")
-console.log(event.data)
-let eventdata = JSON.parse(event.data)
-let func = eventdata[0]
-let data = eventdata[1]
-if (func === 'shape') {
-	let compound = new Compound(scene);
-	// Assuming data is a list of shapes
-	for (let shapeData of data) {
-		// Create a new shape object based on the shape data
-		
-		compound.add_shape(shapeData);
-		//let shape = new Shape(scene, shapeData);
-		// Set the shape's id to the current length of the shapes array
-		// Add the shape to the shapes array
-	}
-	
-	compound.id = compounds.length;
-	compounds.push(compound);
-	console.log("Compound: ", compound)
-	// Send a confirmation message back to the server
-	ws.send(compound.id); // Send the index of the first newly added shape
-
-} else if (func === 'shape_mounted') {
-	let id = 1;
-	ws.send(id);
-} else if (func === 'remove_shape') {
-	let shape = shapes[data]
-	shape.remove(scene)
-	renderer.renderLists.dispose();
-	shapes[data] = null;
-	ws.send(0);
-} else if (func === 'shape_poses') {
-	for (let shapeData of data) {
-		let id = shapeData[0];
-		let poses = shapeData[1];
-		console.log("id: ", id)
-		console.log("poses: ", poses)
-		compounds[id].set_poses(poses);
-	}
-	let jsonString = JSON.stringify([]);
-	ws.send(jsonString);
-} else if (func === 'is_loaded') {
-	let loaded = agents[data].isLoaded();
-	ws.send(loaded);
-} else if (func === 'sim_time') {
-	sim_time.display(parseFloat(data));
-	let jsonString = JSON.stringify([]);
-	ws.send(jsonString);
-} else if (func === 'start_recording') {
-	startRecording(parseFloat(data[0]), data[1], data[2]);
-	ws.send(0);
-} else if (func === 'stop_recording') {
-	stopRecording();
-	
-	setTimeout(
-		function() {
-			ws.send(0);
-		}, 5000);
-} else if (func === 'add_element') {
-	let element = data.element;
-
-	if (element === 'slider') {
-		custom_elements.push(new Slider(data));
-	} else if (element === 'button') {
-		custom_elements.push(new Button(data));
-	} else if (element === 'label') {
-		custom_elements.push(new Label(data));
-	} else if (element === 'select') {
-		custom_elements.push(new Select(data));
-	} else if (element === 'checkbox') {
-		custom_elements.push(new Checkbox(data));
-	} else if (element === 'radio') {
-		custom_elements.push(new Radio(data));
-	}
-	ws.send(0);
-} else if (func === 'check_elements') {
-	let ret = {};
-
-	for (let i = 0; i < custom_elements.length; i++) {
-		if (custom_elements[i].changed === true) {
-			ret[custom_elements[i].id] = custom_elements[i].data;
-			custom_elements[i].changed = false;
-		}
-	}
-	ws.send(JSON.stringify(ret));
-} else if (func === 'update_element') {
-	let id = data.id;
-
-	for (let i = 0; i < custom_elements.length; i++) {
-		if (custom_elements[i].id === id) {
-			custom_elements[i].update(data);
-			break;
-		}
-	}
-
-	ws.send(0);
-	}
-};
-
+let webSocs = new WebSocketCom(53000);
+webSocs.Init();
+ 
 
 function startSim(port) {
 	console.log("port", port)
-	console.log("websocket", ws)
 	init();
 	// window.addEventListener('resize', on_resize, false);
 }
@@ -254,7 +261,7 @@ function init()
 
 
 			const pulleyData = [
-			{x: 0, y: 0,                      z: 0, height: pulleyHeight  , radiusTop: pulleyRadius, radiusBottom: pulleyRadius },    
+			{x: 0, y: 0,                      				  z: 0, height: pulleyHeight  , radiusTop: pulleyRadius		, radiusBottom: pulleyRadius },    
 			{x: 0, y: (pulleyScale * 4 * pulleyHeight)/6,     z: 0, height: pulleyHeight/3, radiusTop: 1.25*pulleyRadius, radiusBottom: 1.25*pulleyRadius },
 			{x: 0, y: - (pulleyScale * 4 * pulleyHeight)/6,   z: 0, height: pulleyHeight/3, radiusTop: 1.25*pulleyRadius, radiusBottom: 1.25*pulleyRadius },
 			]
@@ -385,75 +392,7 @@ function init()
 			this.leftArm.name = "leftArm"
 			this.rightArm.name = "rightArm"
 
-
-
-			// ROBOT PART
-			let previousObject;
-			const basePosition = {x:0, y:0, z:0.63}
-			let key = 'base'
-
-			// this.loadGLBFile("./object/base.glb", 'base', {x:basePosition.x, y:basePosition.y, z:basePosition.z}, {x:0, y:0, z:0}, 2)
-
-			// this.loadGLBFile('./object/plate.glb', 'leftPlate', 2, {x:ropePos.x + 0.2, y:ropePos.y, z:ropePos.z-ropeLength-0.25}, {x:Math.PI/2, y:Math.PI/4, z:0}, 3)
-
-			// if(key === 'base')
-			// {
-			//   object.position.set(basePosition.x, basePosition.y, basePosition.z)
-			//   object.rotation.set(Math.PI/2, 0, 0)
-			// }
-
-			// if(key ==='link1')
-			// {
-			//   object.position.set(  previousObject.position.x + partJoint.position['x'], 
-			//                         previousObject.position.y + partJoint.position['y'], 
-			//                         previousObject.position.z + partJoint.position['z'])
-			//   object.rotation.set(0, 0, Math.PI)
-			// }
-			// else if( key === 'link2')
-			// {
-			//   object.position.set(  previousObject.position.x + partJoint.position['x'], 
-			//                         previousObject.position.y + partJoint.position['y'], 
-			//                         previousObject.position.z + partJoint.position['z'])
-			//   object.rotation.set(0, -Math.PI/2, 0)
-			// }
-			// else if( key === 'link3')
-			// {
-			//   object.position.set(  previousObject.position.x + partJoint.position['z'], 
-			//                         previousObject.position.y + partJoint.position['y'], 
-			//                         previousObject.position.z + partJoint.position['x'])
-			//   object.rotation.set(Math.PI, 0, 0)
-			// }
-			// else if( key === 'link4')
-			// {
-			//   object.position.set(  previousObject.position.x + partJoint.position['x'], 
-			//                         previousObject.position.y + partJoint.position['z'], 
-			//                         previousObject.position.z + partJoint.position['y'])
-			//   object.rotation.set(-Math.PI/2, 0, 0)
-			// }
-			// else if( key === 'link5')
-			// {
-			//   object.position.set(  previousObject.position.x + partJoint.position['x'], 
-			//                         previousObject.position.y + partJoint.position['z'], 
-			//                         previousObject.position.z + partJoint.position['y'])
-			// }
-			// else if( key === 'link6')
-			// {
-			//   object.position.set(  previousObject.position.x + partJoint.position['x'], 
-			//                         previousObject.position.y + partJoint.position['z'], 
-			//                         previousObject.position.z - partJoint.position['y'])
-			// object.rotation.set(-Math.PI/2, 0, 0)
-			// }
-			// else if( key === 'link_eef')
-			// {
-			//   object.position.set(  previousObject.position.x + partJoint.position['x'], 
-			//                         previousObject.position.y + partJoint.position['z'], 
-			//                         previousObject.position.z - partJoint.position['y'])
-			//   object.rotation.set(-Math.PI/2, 0, 0)
-			// }
-
-
-
-			// ROBOT PART END
+			scene = this
 
 		}
 	
