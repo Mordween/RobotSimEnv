@@ -126,7 +126,7 @@ function loadMesh(ob, scene, cb) {
                 }
             });
 
-            scene.add(mesh);
+            scene.physics.addExisting(mesh, { collisionFlags: 0, shape: 'mesh', mass : 0});
             ob['mesh'] = mesh;
             ob['loaded'] = true;
             cb();
@@ -159,7 +159,7 @@ function loadMesh(ob, scene, cb) {
             mesh.castShadow = true;
             mesh.receiveShadow = true;
             console.log("scene.add error", scene)
-            scene.physics.addExisting(mesh);                        // BUG Fixed scene.add is not a fonction
+            scene.physics.addExisting(mesh, { collisionFlags: 0, shape: 'mesh', mass : 0});              
             ob['mesh'] = mesh;
             ob['loaded'] = true;
             cb();
@@ -203,9 +203,15 @@ function loadMesh(ob, scene, cb) {
             }
         );
     } else if (ext == 'gltf' || ext == 'glb') {
-        let loader = gltfloader.load(ob.filename,
-            function (object) {
 
+        // Construct the URL to retrieve the STL file
+        const glbFilePath = `/retrieve/${ob.filename}`;
+        
+        // Load the GLB file using GLTFLoader
+        console.log("path : ", glbFilePath)
+        let loader = gltfloader.load(glbFilePath,
+            function (object) {
+                console.log("on entre dans la fonction object")
                 let mesh = object.scene;
 
                 mesh.traverse( function (child) {
@@ -220,7 +226,7 @@ function loadMesh(ob, scene, cb) {
                 let quat_o = new THREE.Quaternion(ob.q[1], ob.q[2], ob.q[3], ob.q[0]);
                 mesh.setRotationFromQuaternion(quat_o);
 
-                scene.add(mesh);
+                scene.physics.addExisting(mesh, { collisionFlags: 0, shape: 'mesh', mass : 0});
                 ob['mesh'] = mesh;
                 ob['loaded'] = true;
                 cb();

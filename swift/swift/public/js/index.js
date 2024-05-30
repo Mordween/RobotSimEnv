@@ -392,6 +392,9 @@ function init()
 			this.leftArm.name = "leftArm"
 			this.rightArm.name = "rightArm"
 
+			console.log("load glb file")
+			this.loadGLBFile('./assets/base.glb', 'base', {x:2, y:2, z:2}, {x:0, y:0, z:0}, 2)
+
 			scene = this
 
 		}
@@ -414,7 +417,7 @@ function init()
 			object.add(mesh)
 			this.add.mesh(this[name])
 
-			this.physics.add.existing(this[name], { collisionFlags: collisionFlags, shape: 'mesh', mass : 1})    // mass = 0 => kinematics mesh
+			this.physics.add.existing(this[name], { collisionFlags: collisionFlags, shape: 'mesh', mass : 0})    // mass = 0 => kinematics mesh
 			this[name].body.setFriction(1)
 
 			});
