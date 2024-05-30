@@ -109,6 +109,8 @@ function loadMesh(ob, scene, cb) {
     if (ext == 'dae') {
         // Construct the URL to retrieve the STL file
         const daeFilePath = `/retrieve/${ob.filename}`;
+
+        console.log("dae", daeFilePath)
         let loader = daeloader.load(daeFilePath, function(collada) {
 
             let mesh = collada.scene;
@@ -202,7 +204,7 @@ function loadMesh(ob, scene, cb) {
                 );
             }
         );
-    } else if (ext == 'gltf' || ext == 'glb') {
+    } else if (ext == 'gltf' /*|| ext == 'glb'*/) {
 
         // Construct the URL to retrieve the STL file
         const glbFilePath = `/retrieve/${ob.filename}`;
@@ -241,6 +243,33 @@ function loadMesh(ob, scene, cb) {
                 console.log(error);
             }
         );
+        }else if (ext == 'glb') {                                   // TODO try to print the robot not only the collision
+            const glbFilePath = `/retrieve/${ob.filename}`;
+        
+            scene.load.gltf(glbFilePath).then(gltf => {
+
+                let mesh = gltf.scene.children[0]
+    
+                mesh.traverse( function (child) {
+                    if ( child.isMesh ) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                    }
+                });
+
+                mesh.scale.set(ob.scale[0], ob.scale[1], ob.scale[2]);
+                mesh.position.set(ob.t[0], ob.t[1], ob.t[2]);
+                let quat_o = new THREE.Quaternion(ob.q[1], ob.q[2], ob.q[3], ob.q[0]);
+                mesh.setRotationFromQuaternion(quat_o);
+
+                scene.physics.addExisting(mesh, { collisionFlags: 0, shape: 'mesh', mass : 0});
+                console.log("scene", scene)
+                ob['mesh'] = mesh;
+                ob['loaded'] = true;
+                cb();
+    
+                });
+
     } else if (ext == 'ply') {
         let loader = plyloader.load(ob.filename,
             function (geometry) {

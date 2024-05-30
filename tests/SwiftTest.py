@@ -37,7 +37,8 @@ if __name__ == "__main__":  # pragma nocover
     env = swift.Swift()
     env.launch(realtime = True)
     time.sleep(5)
-    robot = rtb.models.Lite6()
+    robot = rtb.models.mycobot280()
+    # robot = rtb.models.Lite6()
 
     rob = RobotControl(0.1, env, robot)
 
