@@ -37,8 +37,8 @@ if __name__ == "__main__":  # pragma nocover
     env = swift.Swift()
     env.launch(realtime = True)
     time.sleep(5)
-    robot = rtb.models.mycobot280()
-    # robot = rtb.models.Lite6()
+    # robot = rtb.models.mycobot280()
+    robot = rtb.models.Lite6()
 
     rob = RobotControl(0.1, env, robot)
 
@@ -46,11 +46,11 @@ if __name__ == "__main__":  # pragma nocover
     positionY = [-0.2, -0.2, 0.2]
     positionZ = [0.05, 0.4, 0.2]
     step = [50, 50, 50]
-    """
+    
     for position in range(len(step)):
         rob.move(positionX[position], positionY[position], positionZ[position], step[position])
         rob.pause(1)
-    """    
+    
     rob.pause(10)
     env.hold()
 

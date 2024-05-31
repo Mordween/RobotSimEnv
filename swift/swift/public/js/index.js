@@ -247,9 +247,9 @@ function init()
 			
 			const { orbitControls } = await this.warpSpeed()
 
-			this.camera.position.set(-10, -10, 20)
+			this.camera.position.set(0.5, -3, 0.5)
 			orbitControls?.target.set(0, 2.5, 0)
-			this.camera.lookAt(0, 0, 0)
+			this.camera.lookAt(0.5, 0, 0)
 
 			// enable physics debugging
 			this.physics.debug?.enable()
@@ -393,7 +393,7 @@ function init()
 			this.rightArm.name = "rightArm"
 
 			console.log("load glb file")
-			this.loadGLBFile('./assets/base.glb', 'base', {x:2, y:2, z:2}, {x:0, y:0, z:0}, 2)
+			this.loadGLBFile('./assets/base.glb', 'base', {x:1, y:0, z:0}, {x:Math.PI/2, y:0, z:0}, 2)
 
 			scene = this
 
