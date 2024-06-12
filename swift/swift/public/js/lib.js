@@ -17,6 +17,8 @@ const pcdloader = new PCDLoader();
 const plyloader = new PLYLoader();
 const gltfloader = new GLTFLoader();
 
+const {ExtendedObject3D } = ENABLE3D
+
 let nav_div_showing = false;
 
 function sleep(milliseconds) {
@@ -146,9 +148,10 @@ function loadMesh(ob, scene, cb) {
                     ob.color[0], ob.color[1], ob.color[2]),
                 specular: 0x111111, shininess: 200
             });
-    
             //material.transparent = true;
             material.opacity = ob.color[3];
+
+            let object = new ExtendedObject3D()
     
             let mesh = new THREE.Mesh(geometry, material);
     
@@ -157,11 +160,15 @@ function loadMesh(ob, scene, cb) {
     
             let quat_o = new THREE.Quaternion(ob.q[0], ob.q[1], ob.q[2], ob.q[3]);
             mesh.setRotationFromQuaternion(quat_o);
-            console.log("mesh", mesh)
+
             mesh.castShadow = true;
             mesh.receiveShadow = true;
-            console.log("scene.add error", scene)
-            scene.physics.addExisting(mesh, { collisionFlags: 0, shape: 'mesh', mass : 0});              
+
+            object.add(mesh)
+            // scene.add.mesh(object)           // BUG Uncaught TypeError: r.onBeforeRender is not a function
+            console.log("scene", scene)
+
+            scene.physics.addExisting(object, { collisionFlags: 0, shape: 'mesh', mass : 0  });            
             ob['mesh'] = mesh;
             ob['loaded'] = true;
             cb();
@@ -249,6 +256,12 @@ function loadMesh(ob, scene, cb) {
             scene.load.gltf(glbFilePath).then(gltf => {
 
                 let mesh = gltf.scene.children[0]
+                let object = new ExtendedObject3D()
+
+                mesh.position.set(ob.t[0], ob.t[1], ob.t[2]);
+                mesh.scale.set(ob.scale[0], ob.scale[1], ob.scale[2]);
+                let quat_o = new THREE.Quaternion(ob.q[1], ob.q[2], ob.q[3], ob.q[0]);
+                mesh.setRotationFromQuaternion(quat_o);
     
                 mesh.traverse( function (child) {
                     if ( child.isMesh ) {
@@ -257,13 +270,9 @@ function loadMesh(ob, scene, cb) {
                     }
                 });
 
-                mesh.scale.set(ob.scale[0], ob.scale[1], ob.scale[2]);
-                mesh.position.set(ob.t[0], ob.t[1], ob.t[2]);
-                let quat_o = new THREE.Quaternion(ob.q[1], ob.q[2], ob.q[3], ob.q[0]);
-                mesh.setRotationFromQuaternion(quat_o);
-
-                scene.physics.addExisting(mesh, { collisionFlags: 0, shape: 'mesh', mass : 0});
-                console.log("scene", scene)
+                object.add(mesh)
+                scene.add.mesh(object)
+                scene.physics.addExisting(object, { collisionFlags: 2, shape: 'mesh', mass : 10});
                 ob['mesh'] = mesh;
                 ob['loaded'] = true;
                 cb();
