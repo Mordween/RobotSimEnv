@@ -17,8 +17,6 @@ const pcdloader = new PCDLoader();
 const plyloader = new PLYLoader();
 const gltfloader = new GLTFLoader();
 
-const {ExtendedObject3D } = ENABLE3D
-
 let nav_div_showing = false;
 
 function sleep(milliseconds) {
@@ -148,8 +146,6 @@ function loadMesh(ob, scene, cb) {
             });
             //material.transparent = true;
             material.opacity = ob.color[3];
-
-            let object = new ExtendedObject3D()
     
             let mesh = new THREE.Mesh(geometry, material);
     
@@ -162,11 +158,10 @@ function loadMesh(ob, scene, cb) {
             mesh.castShadow = true;
             mesh.receiveShadow = true;
 
-            object.add(mesh)
-            scene.add.mesh(object)           // BUG Uncaught TypeError: r.onBeforeRender is not a function
+            scene.add.mesh(mesh)           // BUG Uncaught TypeError: r.onBeforeRender is not a function
             console.log("scene", scene)
 
-            scene.physics.addExisting(object, { collisionFlags: 0, shape: 'mesh', mass : 0  });            
+            scene.physics.addExisting(mesh, { collisionFlags: 2, shape: 'mesh', mass : 0  });            
             ob['mesh'] = mesh;
             ob['loaded'] = true;
             cb();
@@ -254,7 +249,6 @@ function loadMesh(ob, scene, cb) {
             scene.load.gltf(glbFilePath).then(gltf => {
 
                 let mesh = gltf.scene.children[0]
-                let object = new ExtendedObject3D()
                 mesh.position.set(ob.t[0], ob.t[1], ob.t[2]);
                 mesh.scale.set(ob.scale[0], ob.scale[1], ob.scale[2]);
                 let quat_o = new THREE.Quaternion(ob.q[0], ob.q[1], ob.q[2], ob.q[3]);
@@ -266,8 +260,6 @@ function loadMesh(ob, scene, cb) {
                         child.receiveShadow = true;
                     }
                 });
-                object.name = mesh.name
-                object.add(mesh)
                 scene.add.mesh(mesh);
                 scene.physics.addExisting(mesh, { collisionFlags: 2, shape: 'mesh', mass : 0});
 
