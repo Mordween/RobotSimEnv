@@ -3,17 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <title>Merged HTML</title>
-    <link rel="stylesheet" href="style.css">
+    <!-- <link rel="stylesheet" href="style.css"> -->
     <link rel="stylesheet" href="./style/index.css">
+
+    <script src="js/vendor/build/three.min.js">THREE.Object3D.DefaultUp.set(0, 0, 1);</script>
+    <script src="js/vendor/build/CCapture.all.min.js"></script>
+    <!-- <script type="module" src="js/index.js"></script>  -->
+    <script type="text/javascript" src="./js/util.js"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "./lib/three.module.js",
+                "@mkkellogg/gaussian-splats-3d": "./lib/gaussian-splats-3d.module.js"
+            }
+        }
+    </script>
+
+    <script type="module" src="lib/enable3d/enable3d.framework.0.25.4.min.Zup.js"></script>
+
 </head>
 <body>
 
     <p>Awesome FARI simulator</p>
-    <script src="js/vendor/build/three.min.js">THREE.Object3D.DefaultUp.set(0, 0, 1);</script>
-    <script src="js/vendor/build/CCapture.all.min.js"></script>
-    <!-- <script type="module" src="js/index.js"></script>  -->
-
-    <script type="module" src="lib/enable3d/enable3d.framework.0.25.4.min.Zup.js"></script>
     <script type="module" src="js/index.js"></script>
 
     <div id="canvas">

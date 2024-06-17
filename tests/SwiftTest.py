@@ -41,6 +41,8 @@ if __name__ == "__main__":  # pragma nocover
     # robot = rtb.models.mycobot280()
     robot = rtb.models.Lite6()
 
+    time.sleep(5)
+
     rob = RobotControl(0.1, env, robot)
 
     positionX = [0.15, 0.15, 0.35]
