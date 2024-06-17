@@ -94,7 +94,7 @@ class WebSocketCom {
 				let poses = shapeData[1];
 				console.log("id: ", id);
 				console.log("poses: ", poses);
-				compounds[id].set_poses(poses);
+				compounds[id].set_poses(poses);					// -------------------------------------------------------
 			}
 			let jsonString = JSON.stringify([]);
 			this.ws.send(jsonString);
@@ -424,7 +424,7 @@ function init()
 		}
 
 		update(time) 
-		{
+		{	
 
 			for (let i = 0; i < this.pulley.length; i++) {
 				this.pulley[i].rotation.y = pulleyRotValue;
@@ -496,6 +496,7 @@ function init()
 				case "ArrowDown":
 					// Handle "back"
 					pulleyPos.y -= 0.01;
+					console.log(this)
 					break;
 				case "KeyW":
 				case "ArrowUp":

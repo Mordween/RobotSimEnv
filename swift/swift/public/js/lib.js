@@ -98,8 +98,6 @@ function loadCylinder(ob, scene, color, cb) {
 
 function loadMesh(ob, scene, cb) {
 
-    console.log("scene from loadMesh", scene)
-
     let ext = ob.filename.split('.').pop();
 
     if (navigator.appVersion.indexOf("Win") != -1) {
@@ -165,7 +163,7 @@ function loadMesh(ob, scene, cb) {
             mesh.receiveShadow = true;
 
             object.add(mesh)
-            // scene.add.mesh(object)           // BUG Uncaught TypeError: r.onBeforeRender is not a function
+            scene.add.mesh(object)           // BUG Uncaught TypeError: r.onBeforeRender is not a function
             console.log("scene", scene)
 
             scene.physics.addExisting(object, { collisionFlags: 0, shape: 'mesh', mass : 0  });            
@@ -232,7 +230,7 @@ function loadMesh(ob, scene, cb) {
 
                 mesh.scale.set(ob.scale[0], ob.scale[1], ob.scale[2]);
                 mesh.position.set(ob.t[0], ob.t[1], ob.t[2]);
-                let quat_o = new THREE.Quaternion(ob.q[1], ob.q[2], ob.q[3], ob.q[0]);
+                let quat_o = new THREE.Quaternion(ob.q[0], ob.q[1], ob.q[2], ob.q[3]);
                 mesh.setRotationFromQuaternion(quat_o);
 
                 scene.physics.addExisting(mesh, { collisionFlags: 0, shape: 'mesh', mass : 0});
@@ -257,10 +255,9 @@ function loadMesh(ob, scene, cb) {
 
                 let mesh = gltf.scene.children[0]
                 let object = new ExtendedObject3D()
-
                 mesh.position.set(ob.t[0], ob.t[1], ob.t[2]);
                 mesh.scale.set(ob.scale[0], ob.scale[1], ob.scale[2]);
-                let quat_o = new THREE.Quaternion(ob.q[1], ob.q[2], ob.q[3], ob.q[0]);
+                let quat_o = new THREE.Quaternion(ob.q[0], ob.q[1], ob.q[2], ob.q[3]);
                 mesh.setRotationFromQuaternion(quat_o);
     
                 mesh.traverse( function (child) {
@@ -269,10 +266,11 @@ function loadMesh(ob, scene, cb) {
                         child.receiveShadow = true;
                     }
                 });
-
+                object.name = mesh.name
                 object.add(mesh)
-                scene.add.mesh(object)
-                scene.physics.addExisting(object, { collisionFlags: 2, shape: 'mesh', mass : 10});
+                scene.add.mesh(mesh);
+                scene.physics.addExisting(mesh, { collisionFlags: 2, shape: 'mesh', mass : 0});
+
                 ob['mesh'] = mesh;
                 ob['loaded'] = true;
                 cb();
@@ -483,21 +481,20 @@ class Robot{
     }
 }
 
-
 class Shape {
     constructor(scene, ob) {
       this.ob = ob;
       let color = Math.random() * 0xffffff;
       this.loaded = 0;
+      this.ob.lite6 = {};
       let cb = () => {
         this.loaded = 1;
       };
-      console.log("loaded", scene);
 
       load(ob, scene, color, cb);
     }
   
-    set_pose(pose) {
+    set_pose(pose) {                // --------------------------------------------------------------------------------------------------------------
       console.log("setting pose", pose);
       let t = pose.t;
       let q = pose.q;
@@ -506,6 +503,8 @@ class Shape {
       try {
         this.ob.mesh.position.set(t[0], t[1], t[2]);
         this.ob.mesh.setRotationFromQuaternion(quat);
+        this.ob.mesh.body.needUpdate = true;
+
       } catch (error) {
         console.log("skipping step", error);
       }
@@ -531,7 +530,7 @@ class Compound {
   
     set_poses(poses) {
       for (let i = 0; i < this.shapes.length; i++) {
-        this.shapes[i].set_pose(poses[i]);
+        this.shapes[i].set_pose(poses[i], this.scene);
       }
     }
   
