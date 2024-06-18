@@ -321,7 +321,7 @@ class Swift:
     #  Methods to interface with the robots created in other environemnts
     #
 
-    def add(self, ob, robot_alpha=1.0, collision_alpha=0.0, readonly=False):
+    def add(self, ob, robot_alpha=1.0, collision_alpha=0.0, readonly=False, collision_enable=False):
         """
         Add a robot to the graphical scene
 

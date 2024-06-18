@@ -96,6 +96,8 @@ function loadCylinder(ob, scene, color, cb) {
 
 function loadMesh(ob, scene, cb) {
 
+    console.log("ob a t on la bonne variable??", ob);
+
     let ext = ob.filename.split('.').pop();
 
     if (navigator.appVersion.indexOf("Win") != -1) {
@@ -243,7 +245,7 @@ function loadMesh(ob, scene, cb) {
                 console.log(error);
             }
         );
-        }else if (ext == 'glb') {                                   // TODO try to print the robot not only the collision
+        }else if (ext == 'glb') {                                
             const glbFilePath = `/retrieve/${ob.filename}`;
         
             scene.load.gltf(glbFilePath).then(gltf => {

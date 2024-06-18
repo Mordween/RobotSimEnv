@@ -8,14 +8,15 @@ let fps = new FPS(document.getElementById('fps'));
 let sim_time = new SimTime(document.getElementById('sim-time'));
 
 
-const viewer = new GaussianSplats3D.Viewer({
-	'cameraUp': [0.01933, -0.75830, -0.65161],
-	'initialCameraPosition': [1.54163, 2.68515, -6.37228],
-	'initialCameraLookAt': [0.45622, 1.95338, 1.51278],
-	'sphericalHarmonicsDegree': 2,
-	'sharedMemoryForWorkers' : false, 
-});
-let path = './js/splats/point_cloud.ply';
+// const viewer = new GaussianSplats3D.Viewer({
+// 	'cameraUp': [0.01933, -0.75830, -0.65161],
+// 	'initialCameraPosition': [1.54163, 2.68515, -6.37228],
+// 	'initialCameraLookAt': [0.45622, 1.95338, 1.51278],
+// 	'sphericalHarmonicsDegree': 2,
+// 	'sharedMemoryForWorkers' : false, 
+// });
+// let path = './js/splats/point_cloud.ply';
+
 // let path = './js/splats/bonsai.ksplat';
 
 
@@ -260,9 +261,11 @@ function init()
 			
 			const { orbitControls } = await this.warpSpeed()
 
-			this.camera.position.set(0.5, -3, 0.5)
+			// this.camera.position.set(0.5, -3, 0.5)
+			this.camera.position.set(0, -3, 0.5)
 			orbitControls?.target.set(0, 2.5, 0)
-			this.camera.lookAt(0.5, 0, 0)
+			// this.camera.lookAt(0.5, 0, 0)
+			this.camera.lookAt(0, 0, 0)
 
 			// enable physics debugging
 			this.physics.debug?.enable()
@@ -272,14 +275,14 @@ function init()
 			axesHelper.setColors(new THREE.Color(255, 0, 0), new THREE.Color(0, 255, 0), new THREE.Color(0, 0, 255))    // in order to know which axis is the right axis
 			this.scene.add( axesHelper );
 
-			viewer.addSplatScene(path, {
-				'streamView': true
-			})
-			.then(() => {
-				viewer.start();
-				console.log("this scene", this)
-				// this.add(viewer);
-			});
+			// viewer.addSplatScene(path, {
+			// 	'streamView': true
+			// })
+			// .then(() => {
+			// 	// viewer.start();
+			// 	console.log("this scene", this)
+			// 	// this.add(viewer);
+			// });
 
 
 			const pulleyData = [
@@ -414,8 +417,8 @@ function init()
 			this.leftArm.name = "leftArm"
 			this.rightArm.name = "rightArm"
 
-			console.log("load glb file")
-			this.loadGLBFile('./assets/base.glb', 'base', {x:1, y:0, z:0}, {x:Math.PI/2, y:0, z:0}, 2)
+			// console.log("load glb file")
+			// this.loadGLBFile('./assets/base.glb', 'base', {x:1, y:0, z:0}, {x:Math.PI/2, y:0, z:0}, 2)
 
 			scene = this
 
