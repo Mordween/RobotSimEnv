@@ -262,7 +262,9 @@ function loadMesh(ob, scene, cb, collision_enable) {
                 scene.add.mesh(mesh);
                 if(collision_enable == true)
                 {
+                    console.log("before bug???")
                     scene.physics.addExisting(mesh, { collisionFlags: 2, shape: 'mesh', mass : 0});
+                    console.log("after bugss?? ")
                 }
 
                 ob['mesh'] = mesh;
