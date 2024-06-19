@@ -27,9 +27,9 @@ function sleep(milliseconds) {
     } while (currentDate - date < milliseconds);
   }
 
-function load(ob, scene, color, cb) {
+function load(ob, scene, color, cb, collision_enable) {
     if (ob.stype === 'mesh') {
-        loadMesh(ob, scene, cb);
+        loadMesh(ob, scene, cb, collision_enable);
     } else if (ob.stype === 'box') {
         loadBox(ob, scene, color, cb);
     } else if (ob.stype === 'sphere') {
@@ -94,9 +94,7 @@ function loadCylinder(ob, scene, color, cb) {
     cb();
 }
 
-function loadMesh(ob, scene, cb) {
-
-    console.log("ob a t on la bonne variable??", ob);
+function loadMesh(ob, scene, cb, collision_enable) {
 
     let ext = ob.filename.split('.').pop();
 
@@ -215,7 +213,6 @@ function loadMesh(ob, scene, cb) {
         console.log("path : ", glbFilePath)
         let loader = gltfloader.load(glbFilePath,
             function (object) {
-                console.log("on entre dans la fonction object")
                 let mesh = object.scene;
 
                 mesh.traverse( function (child) {
@@ -263,7 +260,10 @@ function loadMesh(ob, scene, cb) {
                     }
                 });
                 scene.add.mesh(mesh);
-                scene.physics.addExisting(mesh, { collisionFlags: 2, shape: 'mesh', mass : 0});
+                if(collision_enable == true)
+                {
+                    scene.physics.addExisting(mesh, { collisionFlags: 2, shape: 'mesh', mass : 0});
+                }
 
                 ob['mesh'] = mesh;
                 ob['loaded'] = true;
@@ -380,6 +380,7 @@ class Robot{
         for (let i = 0; i < ob.links.length; i++) {
             let color = Math.random() * 0xffffff;
 
+
             if (ob.show_robot) {
                 for (let j = 0; j < ob.links[i].geometry.length; j++) {
                     this.promised++;
@@ -476,7 +477,7 @@ class Robot{
 }
 
 class Shape {
-    constructor(scene, ob) {
+    constructor(scene, ob, collision_enable) {
       this.ob = ob;
       let color = Math.random() * 0xffffff;
       this.loaded = 0;
@@ -484,8 +485,7 @@ class Shape {
       let cb = () => {
         this.loaded = 1;
       };
-
-      load(ob, scene, color, cb);
+      load(ob, scene, color, cb, collision_enable);
     }
   
     set_pose(pose) {                // --------------------------------------------------------------------------------------------------------------
@@ -517,8 +517,8 @@ class Compound {
       this.scene = scene;
     }
   
-    add_shape(ob) {
-      let shape = new Shape(this.scene, ob);
+    add_shape(ob, collision_enable) {
+      let shape = new Shape(this.scene, ob, collision_enable);
       this.shapes.push(shape);
     }
   

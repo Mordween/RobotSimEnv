@@ -352,11 +352,12 @@ class Swift:
         # id = add(robot) adds the robot to the external environment. robot
         # must be of an appropriate class. This adds a robot object to a
         # list of robots which will act upon the step() method being called.
+
         if isinstance(ob, Shape):
             ob._propogate_scene_tree()
             ob._added_to_swift = True
             if not self.headless:
-                id = int(self._send_socket("shape", [ob.to_dict()]))
+                id = int(self._send_socket("shape", [collision_enable, ob.to_dict()]))
 
                 while not int(self._send_socket("shape_mounted", [id, 1])):
                     time.sleep(0.1)
@@ -391,7 +392,7 @@ class Swift:
             # Update robot transforms
             ob._update_link_tf()
             ob._propogate_scene_tree()
-
+            
             # Update robot qlim
             ob._qlim = ob.qlim
 
@@ -400,7 +401,7 @@ class Swift:
                     robot_alpha=robot_alpha, collision_alpha=collision_alpha
                 )
 
-                id = self._send_socket("shape", robob)
+                id = self._send_socket("shape", [collision_enable] + robob)
                 print(robob)
                 while not int(self._send_socket("shape_mounted", [id, len(robob)])):
                     time.sleep(0.1)

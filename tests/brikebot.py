@@ -102,7 +102,7 @@ if __name__ == "__main__":  # pragma nocover
     time.sleep(5)
 
     crane = Mesh(
-        filename=("/home/fari/Documents/swiftRepare/tests/urdf-object/crane_body.glb"),
+        filename=str(f"{os.path.expanduser('~')}/Documents/swiftRepare/tests/urdf-object/crane_body.glb"),
         color=[34, 143, 201],
         scale=(0.001,) * 3,
     )
@@ -140,16 +140,14 @@ if __name__ == "__main__":  # pragma nocover
 
     lite6 = rtb.models.Lite6()
     lite6.base = SE3(0.4, 0, 0.0)*SE3.Rz(pi/2)
-    lite6.collison = True
 
-
-    env.add(crane)
+    env.add(crane, collision_enable = False)
     for b in brickwall:
         env.add(b)
-    env.add(brick)
-    env.add(end_effector)
-    env.add(rails)
-    env.add(lite6, collision_enable = True)  #, collision_enable=True
+    env.add(brick, collision_enable = True)
+    env.add(end_effector, collision_enable = True)
+    env.add(rails, collision_enable = False)
+    env.add(lite6, collision_enable = False)  #, collision_enable=True
     
 
 

@@ -84,8 +84,9 @@ class WebSocketCom {
 		if (func === 'shape') {
 			let compound = new Compound(scene);
 			// Assuming data is a list of shapes
-			for (let shapeData of data) {
-				compound.add_shape(shapeData);
+			let collision_enable = data[0];
+			for (let shapeData of data.slice(1)) {
+				compound.add_shape(shapeData, collision_enable);
 			}
 			
 			compound.id = compounds.length;
@@ -166,7 +167,7 @@ class WebSocketCom {
 			}
 
 			this.ws.send(0);
-		}
+		} 
 	}
 }
 

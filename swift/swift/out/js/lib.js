@@ -345,10 +345,12 @@ class Robot{
             }
 
             if (ob.show_collision) {
-                for (let j = 0; j < ob.links[i].collision.length; j++) {
-                    this.promised++;
-                    load(ob.links[i].collision[j], scene, color, cb)
-                }
+
+                console.log("DAM LES COLLISION FAUT LES MONTRER")
+                // for (let j = 0; j < ob.links[i].collision.length; j++) {
+                //     this.promised++;
+                //     load(ob.links[i].collision[j], scene, color, cb)
+                // }
             }
         }
     }

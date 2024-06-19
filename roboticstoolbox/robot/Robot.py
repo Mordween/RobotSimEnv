@@ -156,7 +156,7 @@ class Robot(BaseRobot[Link], RobotKinematicsMixin):
     # --------- Swift Methods --------------------------------------------- #
     # --------------------------------------------------------------------- #
 
-    def _to_dict(self, robot_alpha=1.0, collision_alpha=0.0):
+    def _to_dict(self, robot_alpha=1.0, collision_alpha=0.0, collision_enable = False):             # TODO hmmm maybe i break something
         ob = []
 
         for link in self.links:
@@ -168,6 +168,14 @@ class Robot(BaseRobot[Link], RobotKinematicsMixin):
                 for gi in link.collision:
                     gi.set_alpha(collision_alpha)
                     ob.append(gi.to_dict())
+
+        print("link : ", link)
+            # if collision_enable:
+            #     for gi in link:
+            #         gi.set_alpha(collision_alpha)
+            #         ob.append(gi.to_dict())
+
+        # TODO add collision enable here 
 
         # Do the grippers now
         for gripper in self.grippers:
