@@ -84,7 +84,9 @@ def crane_move_to(T_dest, n_sample):
         shaft.T = SE3.Tx(traj[i].x)*SE3.Ty(traj[i].y)
         # twist = Twist3.UnitRevolute([1 ,0, 0],[0, traj[i].y, 0.3785], 0)
         # shaft.T = twist.SE3(traj[i].z/shaft_radius)*shaft.T
+        print("i : ", i)
         env.step(1/f)
+        time.sleep(1/f)
 
 
 def crane_pick_and_place(T_pick, T_place_up, T_place, n_sample):
@@ -172,19 +174,14 @@ if __name__ == "__main__":  # pragma nocover
     crane_move_to(T_pick, 100)
     env._send_socket("rope", 'add')
 
-    time.sleep(5)
-
-
-    # traj = rtb.ctraj(SE3(end_effector.T), T_place_up, 500)
     # for i in range(500):
-    #     twist = Twist3.UnitRevolute([1 ,0, 0],[0, traj[i].y, 0.3785], 0)
-    #     shaft.T = twist.SE3(traj[i].z/shaft_radius)*shaft.T
+    #     shaft.T = (0,i)
     #     env.step(0.1)
     #     time.sleep(0.1)
 
 
 
-    crane_move_to(T_place_up, 100)
+    # crane_move_to(T_place_up, 100)
 
     # crane_pick_and_place(T_pick, T_place_up, T_place, 100)
 

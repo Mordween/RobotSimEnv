@@ -175,15 +175,22 @@ class WebSocketCom {
 
 			this.ws.send(0);
 		} 
-        else if (func === 'rope') {
+        else if (func === 'rope') 
+		{
 			if(data === 'add')
 			{
 				scene.createRope()
 			}
+			else if(data === 'pop')
+			{
+				scene.popRope()
+			}
 			else
 			{
-				console.log("not add")
+				console.log("This fonction is not implemented! ")
 			}
+
+
 			this.ws.send(0);
 		} 
 	}
@@ -330,7 +337,7 @@ function init()
 
 			console.log(this.ropeSoftBody)
 
-			this.ropeSoftBody.setTotalMass(1, false)                  
+			this.ropeSoftBody.setTotalMass(100, false)                  
 			// @ts-ignore
 			Ammo.castObject(this.ropeSoftBody, Ammo.btCollisionObject).getCollisionShape().setMargin(0.04) 
 			this.physics.physicsWorld.addSoftBody(this.ropeSoftBody, 1, -1)
@@ -344,6 +351,11 @@ function init()
 			this.ropeSoftBody.appendAnchor(ropeNumSegmentsZ, bricks.body.ammo, false, 1)
 
 
+		}
+
+		popRope()
+		{
+			this.ropeSoftBody.m_anchors.pop_back()
 		}
 
 
