@@ -240,7 +240,7 @@ function init()
 	const ropeWidth = 0.001
 	const ropeLength = 4
 	const ropeNumSegmentsZ = 1
-	const ropeNumSegmentsY = 50
+	const ropeNumSegmentsY = 500
 
 	// The pulley
 	const pulleyScale = 0.5
@@ -309,17 +309,17 @@ function init()
 			this.rope = new THREE.Mesh(ropeGeometry, ropeMaterial)
 			this.rope.castShadow = true
 			this.rope.receiveShadow = true
-			this.scene.add(this.rope)
+			// this.scene.add(this.rope)
 
-			this.load.texture('/assets/img/grid.png').then(texture => {
-			texture.wrapS = THREE.RepeatWrapping
-			texture.wrapT = THREE.RepeatWrapping
-			texture.repeat.set(ropeNumSegmentsZ, ropeNumSegmentsY)
-			// @ts-ignore
-			this.rope.material.map = texture
-			// @ts-ignore
-			this.rope.material.needsUpdate = true
-			})
+			// this.load.texture('/assets/img/grid.png').then(texture => {
+			// texture.wrapS = THREE.RepeatWrapping
+			// texture.wrapT = THREE.RepeatWrapping
+			// texture.repeat.set(ropeNumSegmentsZ, ropeNumSegmentsY)
+			// // @ts-ignore
+			// this.rope.material.map = texture
+			// // @ts-ignore
+			// this.rope.material.needsUpdate = true
+			// })
 
 			console.log("thisPhysics", this.physics.physicsWorld.getWorldInfo())
 			this.physics.physicsWorld.getWorldInfo().get_m_gravity().setX(0)

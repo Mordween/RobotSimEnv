@@ -19,7 +19,9 @@ let sim_time = new SimTime(document.getElementById('sim-time'));
 
 // let path = './js/splats/bonsai.ksplat';
 
-
+function getElementByName(array, name) {
+    return array.find(element => element.name === name);
+}
 
 let camera, scene, renderer, controls;
 
@@ -34,6 +36,9 @@ let recorder = null;
 let recording = false;
 let framerate = 20;
 let autoclose = true;
+
+let shaftHeight = 0.3785
+let shaftRad = 0.01
 
 // Open the connection to python
 //let port = parseInt(window.location.pathname.slice(1));
@@ -85,8 +90,9 @@ class WebSocketCom {
 			let compound = new Compound(scene);
 			// Assuming data is a list of shapes
 			let collision_enable = data[0];
-			for (let shapeData of data.slice(1)) {
-				compound.add_shape(shapeData, collision_enable);
+            let collisionFlags = data[1];
+			for (let shapeData of data.slice(2)) {
+				compound.add_shape(shapeData, collision_enable, collisionFlags);
 			}
 			
 			compound.id = compounds.length;
@@ -168,6 +174,70 @@ class WebSocketCom {
 
 			this.ws.send(0);
 		} 
+        else if (func === 'rope') {
+			if(data === 'add')
+			{
+				scene.createRope()
+			}
+			else
+			{
+				console.log("t'as pas add")
+			}
+
+            // console.log(scene)
+            // let brique = getElementByName(scene.scene.children, 'brick')    
+            // console.log(brique)
+            // let shaft = getElementByName(scene.scene.children, 'shaft')
+            // console.log(shaft)
+
+            // // The rope
+            // const ropeWidth = 0.001
+            // const ropeLength =  (shaftHeight + shaft.position.z - brique.position.z) //(shaft.position.z - brique.position.z)
+			// console.log("length", (shaftHeight + shaft.position.z - brique.position.z))
+			// console.log("position", shaft.position, brique.position)
+            // const ropeNumSegmentsZ = 1
+            // const ropeNumSegmentsY = 50
+
+
+            // const ropeGeometry = new THREE.PlaneGeometry(ropeWidth, ropeLength, ropeNumSegmentsZ, ropeNumSegmentsY)
+
+			// const ropeMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff, side: THREE.DoubleSide })
+            // scene.rope = new THREE.Mesh(ropeGeometry, ropeMaterial)
+			// scene.rope.castShadow = true
+			// scene.rope.receiveShadow = true
+			// // scene.scene.add(scene.rope)
+
+            // const softBodyHelpers = new Ammo.btSoftBodyHelpers()
+			// scene.ropeSoftBody
+
+            // const ropeStart = new Ammo.btVector3( (shaft.position.x+2), (shaft.position.y+2), (shaft.position.z+5));
+			// const ropeEnd = new Ammo.btVector3( (shaft.position.x+2), (shaft.position.y +2), (shaft.position.z - ropeLength +5));
+			// scene.ropeSoftBody = softBodyHelpers.CreateRope( 
+			// 	scene.physics.physicsWorld.getWorldInfo(), 
+			// 	ropeStart, 
+			// 	ropeEnd, 
+			// 	ropeNumSegmentsY - 1, 
+			// 	0 
+			// 	);
+
+            // const sbConfig = scene.ropeSoftBody.get_m_cfg()
+			// sbConfig.set_viterations(100)
+			// sbConfig.set_piterations(100)       // the rope is no longer elastic
+
+			// scene.ropeSoftBody.setTotalMass(100, false)                  
+			// // @ts-ignore
+			// Ammo.castObject(scene.ropeSoftBody, Ammo.btCollisionObject).getCollisionShape().setMargin(0.04) 
+			// scene.physics.physicsWorld.addSoftBody(scene.ropeSoftBody, 1, -1)
+
+			// scene.rope.userData.physicsBody = scene.ropeSoftBody
+
+			// scene.ropeSoftBody.setActivationState(4)
+
+            // // scene.ropeSoftBody.appendAnchor(0, shaft.body.ammo, false, 1)
+            // // scene.ropeSoftBody.appendAnchor(ropeNumSegmentsY, brique.body.ammo, false, 1)
+
+			this.ws.send(0);
+		} 
 	}
 }
 
@@ -230,7 +300,7 @@ function init()
 			const { orbitControls } = await this.warpSpeed()
 
 			// this.camera.position.set(0.5, -3, 0.5)
-			this.camera.position.set(0, -3, 0.5)
+			this.camera.position.set(1.2, 1.2, 0.5)
 			orbitControls?.target.set(0, 2.5, 0)
 			// this.camera.lookAt(0.5, 0, 0)
 			this.camera.lookAt(0, 0, 0)
@@ -255,11 +325,8 @@ function init()
 			this.physics.physicsWorld.getWorldInfo().get_m_gravity().setX(0)
 			this.physics.physicsWorld.getWorldInfo().get_m_gravity().setY(0)
 			this.physics.physicsWorld.getWorldInfo().get_m_gravity().setZ(-9.81)      // FIX soft body Gravity
-			
-
 
 			scene = this
-
 		}
 	
 
@@ -267,6 +334,66 @@ function init()
 		{	
 
         }
+
+		createRope()
+		{
+			let bricks = getElementByName(scene.scene.children, 'brick')    
+            let shaft = getElementByName(scene.scene.children, 'shaft')
+
+			// rope parameters
+			const ropePos =  new THREE.Vector3();
+			ropePos.x = shaft.position.x
+			ropePos.y = shaft.position.y
+			ropePos.z = shaft.position.z + shaftHeight - shaftRad
+
+			const ropeWidth = 0.001
+			const ropeLength = ropePos.z - bricks.position.z - shaftRad
+			const ropeNumSegmentsY = 1
+			const ropeNumSegmentsZ = 5000
+
+
+			const ropeGeometry = new THREE.PlaneGeometry(ropeWidth, ropeLength, ropeNumSegmentsY, ropeNumSegmentsZ)
+			const ropeMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff, side: THREE.DoubleSide })
+
+			this.rope = new THREE.Mesh(ropeGeometry, ropeMaterial)
+
+			this.rope.castShadow = true
+			this.rope.receiveShadow = true
+			
+			const softBodyHelpers = new Ammo.btSoftBodyHelpers()
+			this.ropeSoftBody
+			
+
+			const ropeStart = new Ammo.btVector3( ropePos.x, ropePos.y, ropePos.z );
+			const ropeEnd = new Ammo.btVector3( ropePos.x, ropePos.y , ropePos.z - ropeLength );
+
+			this.ropeSoftBody = softBodyHelpers.CreateRope( 
+				this.physics.physicsWorld.getWorldInfo(), 
+				ropeStart, 
+				ropeEnd, 
+				ropeNumSegmentsY - 1, 
+				0 
+			);
+
+			const sbConfig = this.ropeSoftBody.get_m_cfg()
+			sbConfig.set_viterations(100)
+			sbConfig.set_piterations(100)       // the rope is no longer elastic
+
+			console.log(this.ropeSoftBody)
+
+			this.ropeSoftBody.setTotalMass(1, false)                  
+			// @ts-ignore
+			Ammo.castObject(this.ropeSoftBody, Ammo.btCollisionObject).getCollisionShape().setMargin(0.04) 
+			this.physics.physicsWorld.addSoftBody(this.ropeSoftBody, 1, -1)
+
+			this.rope.userData.physicsBody = this.ropeSoftBody
+			
+			// Disable deactivation
+			this.ropeSoftBody.setActivationState(4)
+
+			this.ropeSoftBody.appendAnchor(0, shaft.body.ammo, false, 1)
+
+		}
 
 
 	}

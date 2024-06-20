@@ -74,13 +74,16 @@ def robot_move_to(robot, simulation, dt, dest, gain=2, treshold=0.001, qd_max=1,
         return arrived, robot.q
 
 
-def crane_move_to(T_dest, n_sample, move_brick=False):
+def crane_move_to(T_dest, n_sample):
     traj = rtb.ctraj(SE3(end_effector.T), T_dest, n_sample)
+    
     for i in range(100):
+        
         crane.T = SE3.Tx(traj[i].x)
         end_effector.T = SE3.Tx(traj[i].x)*SE3.Ty(traj[i].y)
-        if move_brick:
-            brick.T = SE3.Tx(traj[i].x)*SE3.Ty(traj[i].y)*SE3.Tz(traj[i].z)
+        shaft.T = SE3.Tx(traj[i].x)*SE3.Ty(traj[i].y)
+        twist = Twist3.UnitRevolute([1 ,0, 0],[0, traj[i].y, 0.3785], 0)
+        shaft.T = twist.SE3(traj[i].z/shaft_radius)*shaft.T
         env.step(1/f)
 
 
@@ -95,6 +98,8 @@ def crane_pick_and_place(T_pick, T_place_up, T_place, n_sample):
 
 if __name__ == "__main__":  # pragma nocover
 
+    shaft_radius = 0.02
+    brick_height = 0.3
 
     env = swift.Swift()
     env.launch(realtime=True)
@@ -106,66 +111,75 @@ if __name__ == "__main__":  # pragma nocover
         color=[34, 143, 201],
         scale=(0.001,) * 3,
     )
-    crane.collison = False
 
-    print("crane", crane)
     end_effector = Mesh(
         filename=("/home/fari/Documents/swiftRepare/tests/urdf-object/end_effector.glb"),
         color=[31, 184, 72],
         scale=(0.001,) * 3,
     )
-    end_effector.collison = False
-    rails= Mesh(
+
+    shaft = Mesh(
+    filename=("/home/fari/Documents/swiftRepare/tests/urdf-object/shaft.glb"),
+    color=[31, 184, 72],
+    scale=(0.001,) * 3,
+    )
+
+    rails= Mesh(    
         filename=("/home/fari/Documents/swiftRepare/tests/urdf-object/rails.glb"),
         color=[240, 103, 103],
         scale=(0.001,) * 3,
     )
-    rails.collison = False
     brick = Mesh(
         filename=("/home/fari/Documents/swiftRepare/tests/urdf-object/brick.glb"),
         color=[50, 50, 50],
         scale=(0.001,) * 3,
     )
-    brick.collison = False
-    brickwall = []
-    for i in range(4):
-        for j in range(3):
-            if not (i==3 and j==0):
-                b = copy.copy(brick)
-                b.T = SE3(0, 0.2 + 0.06*j, 0.03*i)
-                brickwall.append(b)
+    # brickwall = []
+    # for i in range(4):
+    #     for j in range(3):
+    #         if not (i==3 and j==0):
+    #             b = copy.copy(brick)
+    #             b.T = SE3(0, 0.2 + 0.06*j, 0.03*i)
+    #             brickwall.append(b)
 
 
-    brick.T = SE3(0.2, 0.3, 0)
+    brick.T = SE3(0.2, 0.3, 0.03)
 
     lite6 = rtb.models.Lite6()
     lite6.base = SE3(0.4, 0, 0.0)*SE3.Rz(pi/2)
 
     env.add(crane, collision_enable = False)
-    for b in brickwall:
-        env.add(b)
-    env.add(brick, collision_enable = True)
+    # for b in brickwall:
+    #     env.add(b, collision_enable = True, collisionFlags = 0)
+    env.add(brick, collision_enable = True, collisionFlags = 0)
     env.add(end_effector, collision_enable = True)
+    env.add(shaft, collision_enable = True)
     env.add(rails, collision_enable = False)
     env.add(lite6, collision_enable = False)  #, collision_enable=True
-    
-
 
     time.sleep(5)
 
-    # end_effector.T = SE3(0, 0, 0.0)
-    # crane.T = SE3(0, 0, 0.0)
-    # brick.T = SE3(0.2, 0.3, 0)
-    # f=30
+    end_effector.T = SE3(0, 0, 0.0)
+    crane.T = SE3(0, 0, 0.0)
+    brick.T = SE3(0.2, 0.3, 0)
+    f=30
+
+    T_pick = SE3(brick.T)
+    T_place_up = SE3(0.0, 0.2, 0.2)
+    T_place = SE3(0, 0.2, 0.09)
 
 
-    # T_pick = SE3(brick.T)
-    # T_place_up = SE3(0.0, 0.2, 0.2)
-    # T_place = SE3(0, 0.2, 0.09)
+    crane_move_to(T_pick, 100)
+    env._send_socket("rope", 'add')
+
+    time.sleep(5)
+
+
+    # crane_move_to(T_place_up, 100)
 
     # crane_pick_and_place(T_pick, T_place_up, T_place, 100)
 
-
+    time.sleep(100)
     env.hold()
 
 

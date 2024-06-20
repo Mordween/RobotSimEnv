@@ -27,9 +27,9 @@ function sleep(milliseconds) {
     } while (currentDate - date < milliseconds);
   }
 
-function load(ob, scene, color, cb, collision_enable) {
+function load(ob, scene, color, cb, collision_enable, collisionFlags) {
     if (ob.stype === 'mesh') {
-        loadMesh(ob, scene, cb, collision_enable);
+        loadMesh(ob, scene, cb, collision_enable, collisionFlags);
     } else if (ob.stype === 'box') {
         loadBox(ob, scene, color, cb);
     } else if (ob.stype === 'sphere') {
@@ -94,7 +94,7 @@ function loadCylinder(ob, scene, color, cb) {
     cb();
 }
 
-function loadMesh(ob, scene, cb, collision_enable) {
+function loadMesh(ob, scene, cb, collision_enable, collisionFlags) {
 
     let ext = ob.filename.split('.').pop();
 
@@ -263,8 +263,7 @@ function loadMesh(ob, scene, cb, collision_enable) {
                 if(collision_enable == true)
                 {
                     console.log("before bug???")
-                    scene.physics.addExisting(mesh, { collisionFlags: 2, shape: 'mesh', mass : 0});
-                    console.log("after bugss?? ")
+                    scene.physics.addExisting(mesh, { collisionFlags: collisionFlags, shape: 'mesh', mass : 1});
                 }
 
                 ob['mesh'] = mesh;
@@ -479,7 +478,7 @@ class Robot{
 }
 
 class Shape {
-    constructor(scene, ob, collision_enable) {
+    constructor(scene, ob, collision_enable, collisionFlags) {
       this.ob = ob;
       let color = Math.random() * 0xffffff;
       this.loaded = 0;
@@ -487,7 +486,7 @@ class Shape {
       let cb = () => {
         this.loaded = 1;
       };
-      load(ob, scene, color, cb, collision_enable);
+      load(ob, scene, color, cb, collision_enable, collisionFlags);
     }
   
     set_pose(pose) {                // --------------------------------------------------------------------------------------------------------------
@@ -519,8 +518,8 @@ class Compound {
       this.scene = scene;
     }
   
-    add_shape(ob, collision_enable) {
-      let shape = new Shape(this.scene, ob, collision_enable);
+    add_shape(ob, collision_enable, collisionFlags) {
+      let shape = new Shape(this.scene, ob, collision_enable, collisionFlags);
       this.shapes.push(shape);
     }
   
