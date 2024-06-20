@@ -39,6 +39,7 @@ let autoclose = true;
 
 let shaftHeight = 0.3785
 let shaftRad = 0.01
+let brickHeight = 0.03
 
 // Open the connection to python
 //let port = parseInt(window.location.pathname.slice(1));
@@ -181,61 +182,8 @@ class WebSocketCom {
 			}
 			else
 			{
-				console.log("t'as pas add")
+				console.log("not add")
 			}
-
-            // console.log(scene)
-            // let brique = getElementByName(scene.scene.children, 'brick')    
-            // console.log(brique)
-            // let shaft = getElementByName(scene.scene.children, 'shaft')
-            // console.log(shaft)
-
-            // // The rope
-            // const ropeWidth = 0.001
-            // const ropeLength =  (shaftHeight + shaft.position.z - brique.position.z) //(shaft.position.z - brique.position.z)
-			// console.log("length", (shaftHeight + shaft.position.z - brique.position.z))
-			// console.log("position", shaft.position, brique.position)
-            // const ropeNumSegmentsZ = 1
-            // const ropeNumSegmentsY = 50
-
-
-            // const ropeGeometry = new THREE.PlaneGeometry(ropeWidth, ropeLength, ropeNumSegmentsZ, ropeNumSegmentsY)
-
-			// const ropeMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff, side: THREE.DoubleSide })
-            // scene.rope = new THREE.Mesh(ropeGeometry, ropeMaterial)
-			// scene.rope.castShadow = true
-			// scene.rope.receiveShadow = true
-			// // scene.scene.add(scene.rope)
-
-            // const softBodyHelpers = new Ammo.btSoftBodyHelpers()
-			// scene.ropeSoftBody
-
-            // const ropeStart = new Ammo.btVector3( (shaft.position.x+2), (shaft.position.y+2), (shaft.position.z+5));
-			// const ropeEnd = new Ammo.btVector3( (shaft.position.x+2), (shaft.position.y +2), (shaft.position.z - ropeLength +5));
-			// scene.ropeSoftBody = softBodyHelpers.CreateRope( 
-			// 	scene.physics.physicsWorld.getWorldInfo(), 
-			// 	ropeStart, 
-			// 	ropeEnd, 
-			// 	ropeNumSegmentsY - 1, 
-			// 	0 
-			// 	);
-
-            // const sbConfig = scene.ropeSoftBody.get_m_cfg()
-			// sbConfig.set_viterations(100)
-			// sbConfig.set_piterations(100)       // the rope is no longer elastic
-
-			// scene.ropeSoftBody.setTotalMass(100, false)                  
-			// // @ts-ignore
-			// Ammo.castObject(scene.ropeSoftBody, Ammo.btCollisionObject).getCollisionShape().setMargin(0.04) 
-			// scene.physics.physicsWorld.addSoftBody(scene.ropeSoftBody, 1, -1)
-
-			// scene.rope.userData.physicsBody = scene.ropeSoftBody
-
-			// scene.ropeSoftBody.setActivationState(4)
-
-            // // scene.ropeSoftBody.appendAnchor(0, shaft.body.ammo, false, 1)
-            // // scene.ropeSoftBody.appendAnchor(ropeNumSegmentsY, brique.body.ammo, false, 1)
-
 			this.ws.send(0);
 		} 
 	}
@@ -322,10 +270,6 @@ function init()
 			// 	// this.add(viewer);
 			// });
 
-			this.physics.physicsWorld.getWorldInfo().get_m_gravity().setX(0)
-			this.physics.physicsWorld.getWorldInfo().get_m_gravity().setY(0)
-			this.physics.physicsWorld.getWorldInfo().get_m_gravity().setZ(-9.81)      // FIX soft body Gravity
-
 			scene = this
 		}
 	
@@ -337,8 +281,13 @@ function init()
 
 		createRope()
 		{
-			let bricks = getElementByName(scene.scene.children, 'brick')    
-            let shaft = getElementByName(scene.scene.children, 'shaft')
+
+			this.physics.physicsWorld.getWorldInfo().get_m_gravity().setX(0)
+			this.physics.physicsWorld.getWorldInfo().get_m_gravity().setY(0)
+			this.physics.physicsWorld.getWorldInfo().get_m_gravity().setZ(-9.81)      // FIX soft body Gravity
+
+			let bricks = getElementByName(this.scene.children, 'brick')    
+            let shaft = getElementByName(this.scene.children, 'shaft')
 
 			// rope parameters
 			const ropePos =  new THREE.Vector3();
@@ -347,9 +296,9 @@ function init()
 			ropePos.z = shaft.position.z + shaftHeight - shaftRad
 
 			const ropeWidth = 0.001
-			const ropeLength = ropePos.z - bricks.position.z - shaftRad
+			const ropeLength = ropePos.z - bricks.position.z - brickHeight/2
 			const ropeNumSegmentsY = 1
-			const ropeNumSegmentsZ = 5000
+			const ropeNumSegmentsZ = 50
 
 
 			const ropeGeometry = new THREE.PlaneGeometry(ropeWidth, ropeLength, ropeNumSegmentsY, ropeNumSegmentsZ)
@@ -371,7 +320,7 @@ function init()
 				this.physics.physicsWorld.getWorldInfo(), 
 				ropeStart, 
 				ropeEnd, 
-				ropeNumSegmentsY - 1, 
+				ropeNumSegmentsZ - 1, 
 				0 
 			);
 
@@ -392,6 +341,8 @@ function init()
 			this.ropeSoftBody.setActivationState(4)
 
 			this.ropeSoftBody.appendAnchor(0, shaft.body.ammo, false, 1)
+			this.ropeSoftBody.appendAnchor(ropeNumSegmentsZ, bricks.body.ammo, false, 1)
+
 
 		}
 

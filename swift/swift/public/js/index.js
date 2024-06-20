@@ -238,9 +238,9 @@ function init()
 
 	// The rope
 	const ropeWidth = 0.001
-	const ropeLength = 4
+	const ropeLength = 0.2
 	const ropeNumSegmentsZ = 1
-	const ropeNumSegmentsY = 500
+	const ropeNumSegmentsY = 50
 
 	// The pulley
 	const pulleyScale = 0.5
@@ -303,23 +303,23 @@ function init()
 			})
 
 
-			const ropeGeometry = new THREE.PlaneGeometry(ropeWidth, ropeLength, ropeNumSegmentsZ, ropeNumSegmentsY)
+			// const ropeGeometry = new THREE.PlaneGeometry(ropeWidth, ropeLength, ropeNumSegmentsZ, ropeNumSegmentsY)
 
-			const ropeMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff, side: THREE.DoubleSide })
-			this.rope = new THREE.Mesh(ropeGeometry, ropeMaterial)
-			this.rope.castShadow = true
-			this.rope.receiveShadow = true
-			// this.scene.add(this.rope)
+			// const ropeMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff, side: THREE.DoubleSide })
+			// this.rope = new THREE.Mesh(ropeGeometry, ropeMaterial)
+			// this.rope.castShadow = true
+			// this.rope.receiveShadow = true
+			// // this.scene.add(this.rope)
 
-			// this.load.texture('/assets/img/grid.png').then(texture => {
-			// texture.wrapS = THREE.RepeatWrapping
-			// texture.wrapT = THREE.RepeatWrapping
-			// texture.repeat.set(ropeNumSegmentsZ, ropeNumSegmentsY)
-			// // @ts-ignore
-			// this.rope.material.map = texture
-			// // @ts-ignore
-			// this.rope.material.needsUpdate = true
-			// })
+			// // this.load.texture('/assets/img/grid.png').then(texture => {
+			// // texture.wrapS = THREE.RepeatWrapping
+			// // texture.wrapT = THREE.RepeatWrapping
+			// // texture.repeat.set(ropeNumSegmentsZ, ropeNumSegmentsY)
+			// // // @ts-ignore
+			// // this.rope.material.map = texture
+			// // // @ts-ignore
+			// // this.rope.material.needsUpdate = true
+			// // })
 
 			console.log("thisPhysics", this.physics.physicsWorld.getWorldInfo())
 			this.physics.physicsWorld.getWorldInfo().get_m_gravity().setX(0)
@@ -328,58 +328,61 @@ function init()
 			
 			console.log("thisPhysics", this.physics.physicsWorld.getWorldInfo())
 
-			const softBodyHelpers = new Ammo.btSoftBodyHelpers()
-			this.ropeSoftBody
+			// const softBodyHelpers = new Ammo.btSoftBodyHelpers()
+			// this.ropeSoftBody
 			
-			if (ropeBodyUse === true)   /*********************************** CreateRope used *********************************/
-			{
-			const ropeStart = new Ammo.btVector3( ropePos.x, ropePos.y, ropePos.z );
-			const ropeEnd = new Ammo.btVector3( ropePos.x, ropePos.y , ropePos.z - ropeLength );
-			this.ropeSoftBody = softBodyHelpers.CreateRope( 
-			this.physics.physicsWorld.getWorldInfo(), 
-			ropeStart, 
-			ropeEnd, 
-			ropeNumSegmentsY - 1, 
-			0 
-			);
-			}
-			else                      /*********************************** CreatePatch used *********************************/
-			{
-			const ropeCornerBR = new Ammo.btVector3(ropePos.x, ropePos.y + 0.5 * ropeWidth, ropePos.z - ropeLength)
-			const ropeCornerBL = new Ammo.btVector3(ropePos.x, ropePos.y - 0.5 * ropeWidth, ropePos.z - ropeLength)
-			const ropeCornerTR = new Ammo.btVector3(ropePos.x, ropePos.y + 0.5 * ropeWidth, ropePos.z)
-			const ropeCornerTL = new Ammo.btVector3(ropePos.x, ropePos.y - 0.5 * ropeWidth, ropePos.z)
+			// if (ropeBodyUse === true)   /*********************************** CreateRope used *********************************/
+			// {
+			// const ropeStart = new Ammo.btVector3( ropePos.x, ropePos.y, ropePos.z );
+			// const ropeEnd = new Ammo.btVector3( ropePos.x, ropePos.y , ropePos.z - ropeLength );
+			// this.ropeSoftBody = softBodyHelpers.CreateRope( 
+			// this.physics.physicsWorld.getWorldInfo(), 
+			// ropeStart, 
+			// ropeEnd, 
+			// ropeNumSegmentsY - 1, 
+			// 0 
+			// );
+			// }
+			// else                      /*********************************** CreatePatch used *********************************/
+			// {
+			// const ropeCornerBR = new Ammo.btVector3(ropePos.x, ropePos.y + 0.5 * ropeWidth, ropePos.z - ropeLength)
+			// const ropeCornerBL = new Ammo.btVector3(ropePos.x, ropePos.y - 0.5 * ropeWidth, ropePos.z - ropeLength)
+			// const ropeCornerTR = new Ammo.btVector3(ropePos.x, ropePos.y + 0.5 * ropeWidth, ropePos.z)
+			// const ropeCornerTL = new Ammo.btVector3(ropePos.x, ropePos.y - 0.5 * ropeWidth, ropePos.z)
 
-			this.ropeSoftBody = softBodyHelpers.CreatePatch(
-			this.physics.physicsWorld.getWorldInfo(),
-			ropeCornerBR,
-			ropeCornerBL,
-			ropeCornerTR,
-			ropeCornerTL,
-			ropeNumSegmentsZ + 1,
-			ropeNumSegmentsY + 1,
-			0,
-			true
-			);
-			}
+			// this.ropeSoftBody = softBodyHelpers.CreatePatch(
+			// this.physics.physicsWorld.getWorldInfo(),
+			// ropeCornerBR,
+			// ropeCornerBL,
+			// ropeCornerTR,
+			// ropeCornerTL,
+			// ropeNumSegmentsZ + 1,
+			// ropeNumSegmentsY + 1,
+			// 0,
+			// true
+			// );
+			// }
 
-			const sbConfig = this.ropeSoftBody.get_m_cfg()
-			sbConfig.set_viterations(100)
-			sbConfig.set_piterations(100)       // the rope is no longer elastic
+			// const sbConfig = this.ropeSoftBody.get_m_cfg()
+			// sbConfig.set_viterations(100)
+			// sbConfig.set_piterations(100)       // the rope is no longer elastic
 
-			this.ropeSoftBody.setTotalMass(100, false)                  
-			// @ts-ignore
-			Ammo.castObject(this.ropeSoftBody, Ammo.btCollisionObject).getCollisionShape().setMargin(0.04) 
-			this.physics.physicsWorld.addSoftBody(this.ropeSoftBody, 1, -1)
+			// this.ropeSoftBody.setTotalMass(100, false)                  
+			// // @ts-ignore
+			// Ammo.castObject(this.ropeSoftBody, Ammo.btCollisionObject).getCollisionShape().setMargin(0.04) 
+			// this.physics.physicsWorld.addSoftBody(this.ropeSoftBody, 1, -1)
 
-			console.log("this", this)
+			// console.log("this", this)
 
-			this.rope.userData.physicsBody = this.ropeSoftBody
+			// this.rope.userData.physicsBody = this.ropeSoftBody
 			
-			// Disable deactivation
-			this.ropeSoftBody.setActivationState(4)
+			// // Disable deactivation
+			// this.ropeSoftBody.setActivationState(4)
 
 			// Glue the rope to the pulley
+
+			this.createRope()
+
 			const influence = 1
 			if(ropeBodyUse == true) /*********************************** if CreateRope used *********************************/
 			{
@@ -390,38 +393,84 @@ function init()
 			this.ropeSoftBody.appendAnchor(ropeNumSegmentsY*2, this.pulley[0].body.ammo, false, influence)
 			}
 
-			this.ropeSoftBody.setFriction(1)
-			this.ropeSoftBody.setRollingFriction(1)
+			// this.ropeSoftBody.setFriction(1)
+			// this.ropeSoftBody.setRollingFriction(1)
 
-			this.initInput()
+			// this.initInput()
 
 
-			const armParams = {
-			mass: 1,
-			z: 2,
-			height: 0.7,
-			width: 0.1,
-			depth: 0.4,
-			collisionFlags: 2
-			}
-			const addArm = x => {
-			const arm = this.physics.add.box({
-				...armParams,
-				x
-			})
-			arm.body.setFriction(1)
-			arm.body.setDamping(0.5,0.5);
-			return arm
-			}
-			this.leftArm = addArm(-0.3)
-			this.rightArm = addArm(0.3)
-			this.leftArm.name = "leftArm"
-			this.rightArm.name = "rightArm"
+			// const armParams = {
+			// mass: 1,
+			// z: 2,
+			// height: 0.7,
+			// width: 0.1,
+			// depth: 0.4,
+			// collisionFlags: 2
+			// }
+			// const addArm = x => {
+			// const arm = this.physics.add.box({
+			// 	...armParams,
+			// 	x
+			// })
+			// arm.body.setFriction(1)
+			// arm.body.setDamping(0.5,0.5);
+			// return arm
+			// }
+			// this.leftArm = addArm(-0.3)
+			// this.rightArm = addArm(0.3)
+			// this.leftArm.name = "leftArm"
+			// this.rightArm.name = "rightArm"
 
 			// console.log("load glb file")
 			// this.loadGLBFile('./assets/base.glb', 'base', {x:1, y:0, z:0}, {x:Math.PI/2, y:0, z:0}, 2)
 
 			scene = this
+
+		}
+
+		createRope()
+		{
+
+
+			const ropeGeometry = new THREE.PlaneGeometry(ropeWidth, ropeLength, ropeNumSegmentsY, ropeNumSegmentsZ)
+			const ropeMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff, side: THREE.DoubleSide })
+
+			this.rope = new THREE.Mesh(ropeGeometry, ropeMaterial)
+
+			this.rope.castShadow = true
+			this.rope.receiveShadow = true
+			
+			const softBodyHelpers = new Ammo.btSoftBodyHelpers()
+			this.ropeSoftBody
+			
+
+			const ropeStart = new Ammo.btVector3( ropePos.x, ropePos.y, ropePos.z );
+			const ropeEnd = new Ammo.btVector3( ropePos.x, ropePos.y , ropePos.z - ropeLength );
+
+			this.ropeSoftBody = softBodyHelpers.CreateRope( 
+				this.physics.physicsWorld.getWorldInfo(), 
+				ropeStart, 
+				ropeEnd, 
+				ropeNumSegmentsY - 1, 
+				0 
+			);
+
+			const sbConfig = this.ropeSoftBody.get_m_cfg()
+			sbConfig.set_viterations(100)
+			sbConfig.set_piterations(100)       // the rope is no longer elastic
+
+			console.log(this.ropeSoftBody)
+
+			this.ropeSoftBody.setTotalMass(1, false)                  
+			// @ts-ignore
+			Ammo.castObject(this.ropeSoftBody, Ammo.btCollisionObject).getCollisionShape().setMargin(0.04) 
+			this.physics.physicsWorld.addSoftBody(this.ropeSoftBody, 1, -1)
+
+			this.rope.userData.physicsBody = this.ropeSoftBody
+			
+			// Disable deactivation
+			this.ropeSoftBody.setActivationState(4)
+
 
 		}
 	
@@ -452,46 +501,46 @@ function init()
 		update(time) 
 		{	
 
-			for (let i = 0; i < this.pulley.length; i++) {
-				this.pulley[i].rotation.y = pulleyRotValue;
-				this.pulley[i].position.setX(pulleyPos.x); 
-				this.pulley[i].position.setY(i === 0 ? pulleyPos.y : (i===1? pulleyPos.y + 4 * pulleyHeight/6:pulleyPos.y - 4 * pulleyHeight/6)); 
-				this.pulley[i].position.setZ(pulleyPos.z);
-				this.pulley[i].body.needUpdate = true
-			}
+			// for (let i = 0; i < this.pulley.length; i++) {
+			// 	this.pulley[i].rotation.y = pulleyRotValue;
+			// 	this.pulley[i].position.setX(pulleyPos.x); 
+			// 	this.pulley[i].position.setY(i === 0 ? pulleyPos.y : (i===1? pulleyPos.y + 4 * pulleyHeight/6:pulleyPos.y - 4 * pulleyHeight/6)); 
+			// 	this.pulley[i].position.setZ(pulleyPos.z);
+			// 	this.pulley[i].body.needUpdate = true
+			// }
 
-			if (brickSpawn===true)
-			{ 
-			this.leftArm.position.set(  this.brick.position.x,
-										this.brick.position.y,
-										this.brick.position.z 
-										)
-			this.leftArm.translateX(armPos)
+			// if (brickSpawn===true)
+			// { 
+			// this.leftArm.position.set(  this.brick.position.x,
+			// 							this.brick.position.y,
+			// 							this.brick.position.z 
+			// 							)
+			// this.leftArm.translateX(armPos)
 
-			this.rightArm.position.set( this.brick.position.x,
-										this.brick.position.y,
-										this.brick.position.z 
-										)
-			this.rightArm.translateX(-armPos)
+			// this.rightArm.position.set( this.brick.position.x,
+			// 							this.brick.position.y,
+			// 							this.brick.position.z 
+			// 							)
+			// this.rightArm.translateX(-armPos)
 
-			this.leftArm.quaternion._w = this.brick.quaternion.w 
-			this.leftArm.quaternion._x = this.brick.quaternion.x
-			this.leftArm.quaternion._y = this.brick.quaternion.y
-			this.leftArm.quaternion._z = this.brick.quaternion.z
+			// this.leftArm.quaternion._w = this.brick.quaternion.w 
+			// this.leftArm.quaternion._x = this.brick.quaternion.x
+			// this.leftArm.quaternion._y = this.brick.quaternion.y
+			// this.leftArm.quaternion._z = this.brick.quaternion.z
 
-			this.rightArm.quaternion._w = this.brick.quaternion.w 
-			this.rightArm.quaternion._x = this.brick.quaternion.x
-			this.rightArm.quaternion._y = this.brick.quaternion.y
-			this.rightArm.quaternion._z = this.brick.quaternion.z
+			// this.rightArm.quaternion._w = this.brick.quaternion.w 
+			// this.rightArm.quaternion._x = this.brick.quaternion.x
+			// this.rightArm.quaternion._y = this.brick.quaternion.y
+			// this.rightArm.quaternion._z = this.brick.quaternion.z
 
-			this.leftArm.body.needUpdate = true
-			this.rightArm.body.needUpdate = true                      
+			// this.leftArm.body.needUpdate = true
+			// this.rightArm.body.needUpdate = true                      
 
-			// /*** Friction with air ***/ 
-			this.brick.body.applyForceX(- 0.05* this.brick.body.velocity.x * 1 * this.physics.physicsWorld.getWorldInfo().air_density )
-			this.brick.body.applyForceY(- 0.05* this.brick.body.velocity.y * 1 * this.physics.physicsWorld.getWorldInfo().air_density )
-			this.brick.body.applyForceZ(- 0.05* this.brick.body.velocity.z * 1 * this.physics.physicsWorld.getWorldInfo().air_density )
-			}
+			// // /*** Friction with air ***/ 
+			// this.brick.body.applyForceX(- 0.05* this.brick.body.velocity.x * 1 * this.physics.physicsWorld.getWorldInfo().air_density )
+			// this.brick.body.applyForceY(- 0.05* this.brick.body.velocity.y * 1 * this.physics.physicsWorld.getWorldInfo().air_density )
+			// this.brick.body.applyForceZ(- 0.05* this.brick.body.velocity.z * 1 * this.physics.physicsWorld.getWorldInfo().air_density )
+			// }
 			
 		}
 

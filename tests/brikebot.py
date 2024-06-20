@@ -82,14 +82,14 @@ def crane_move_to(T_dest, n_sample):
         crane.T = SE3.Tx(traj[i].x)
         end_effector.T = SE3.Tx(traj[i].x)*SE3.Ty(traj[i].y)
         shaft.T = SE3.Tx(traj[i].x)*SE3.Ty(traj[i].y)
-        twist = Twist3.UnitRevolute([1 ,0, 0],[0, traj[i].y, 0.3785], 0)
-        shaft.T = twist.SE3(traj[i].z/shaft_radius)*shaft.T
+        # twist = Twist3.UnitRevolute([1 ,0, 0],[0, traj[i].y, 0.3785], 0)
+        # shaft.T = twist.SE3(traj[i].z/shaft_radius)*shaft.T
         env.step(1/f)
 
 
 def crane_pick_and_place(T_pick, T_place_up, T_place, n_sample):
     crane_move_to(T_pick, n_sample)
-    crane_move_to(T_place_up, n_sample, move_brick=True)
+    crane_move_to(T_place_up, n_sample)
     # robot_move_to(lite6, env, 1/f, T_place_up*SE3.RPY([0, 0, -90], order='xyz', unit='deg'), gain=2, treshold=0.001, qd_max=1)
     # robot_move_to(lite6, env, 1/f, T_place*SE3.RPY([0, 0, -90], order='xyz', unit='deg'), gain=2, treshold=0.001, qd_max=1, move_brick=True)
     # robot_move_to(lite6, env, 1/f, lite6.qz, gain=2, treshold=0.001, qd_max=1)
@@ -99,7 +99,7 @@ def crane_pick_and_place(T_pick, T_place_up, T_place, n_sample):
 if __name__ == "__main__":  # pragma nocover
 
     shaft_radius = 0.02
-    brick_height = 0.3
+    brick_height = 0.03
 
     env = swift.Swift()
     env.launch(realtime=True)
@@ -155,14 +155,14 @@ if __name__ == "__main__":  # pragma nocover
     env.add(end_effector, collision_enable = True)
     env.add(shaft, collision_enable = True)
     env.add(rails, collision_enable = False)
-    env.add(lite6, collision_enable = False)  #, collision_enable=True
+    # env.add(lite6, collision_enable = False) 
 
     time.sleep(5)
 
     end_effector.T = SE3(0, 0, 0.0)
     crane.T = SE3(0, 0, 0.0)
     brick.T = SE3(0.2, 0.3, 0)
-    f=30
+    f=50
 
     T_pick = SE3(brick.T)
     T_place_up = SE3(0.0, 0.2, 0.2)
@@ -175,7 +175,16 @@ if __name__ == "__main__":  # pragma nocover
     time.sleep(5)
 
 
-    # crane_move_to(T_place_up, 100)
+    # traj = rtb.ctraj(SE3(end_effector.T), T_place_up, 500)
+    # for i in range(500):
+    #     twist = Twist3.UnitRevolute([1 ,0, 0],[0, traj[i].y, 0.3785], 0)
+    #     shaft.T = twist.SE3(traj[i].z/shaft_radius)*shaft.T
+    #     env.step(0.1)
+    #     time.sleep(0.1)
+
+
+
+    crane_move_to(T_place_up, 100)
 
     # crane_pick_and_place(T_pick, T_place_up, T_place, 100)
 
