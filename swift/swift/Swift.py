@@ -257,8 +257,13 @@ class Swift:
                 events = self._draw_all()
                 print(events)
 
-                # Process GUI events
-                self.process_events(events)
+                # Process GUI events                        
+                try :                                           # not a real fix 
+                    self.process_events(events)
+                except:
+                    print("error on event list")
+                    print(events)
+                    print("event list ended")
 
             elif not self.rendering:
                 if (time.time() - self._laststep) < self._notrenderperiod:

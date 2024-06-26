@@ -20,7 +20,7 @@ let sim_time = new SimTime(document.getElementById('sim-time'));
 // let path = './js/splats/bonsai.ksplat';
 
 function getElementByName(array, name) {
-    return array.find(element => element.name === name);
+    return [array.find(element => element.name === name), array.findIndex(element => element.name === name)];
 }
 
 let camera, scene, renderer, controls;
@@ -38,7 +38,7 @@ let framerate = 20;
 let autoclose = true;
 
 let shaftHeight = 0.3785
-let shaftRad = 0.01
+let shaftRad = 0.005
 let brickHeight = 0.03
 
 // Open the connection to python
@@ -87,6 +87,11 @@ class WebSocketCom {
 		let func = eventdata[0];
 		let data = eventdata[1];
 		console.log("data", data)
+		try {
+			console.log("scene", scene)
+		  } catch (error) {
+			console.log("skipping step", error);
+		  }
 		if (func === 'shape') {
 			let compound = new Compound(scene);
 			// Assuming data is a list of shapes
@@ -180,6 +185,10 @@ class WebSocketCom {
 			if(data === 'add')
 			{
 				scene.createRope()
+			}
+			else if(data === 'add2')
+			{
+				scene.createRope2()
 			}
 			else if(data === 'pop')
 			{
@@ -291,19 +300,23 @@ function init()
 
 			this.physics.physicsWorld.getWorldInfo().get_m_gravity().setX(0)
 			this.physics.physicsWorld.getWorldInfo().get_m_gravity().setY(0)
-			this.physics.physicsWorld.getWorldInfo().get_m_gravity().setZ(-9.81)      // FIX soft body Gravity
+			this.physics.physicsWorld.getWorldInfo().get_m_gravity().setZ(-9.81)
+			// this.physics.physicsWorld.getWorldInfo().get_m_gravity().setZ(0)
 
-			let bricks = getElementByName(this.scene.children, 'brick')    
-            let shaft = getElementByName(this.scene.children, 'shaft')
+			let [bricks, bricksNum] = getElementByName(this.scene.children, 'brick');
+            let [shaft, shaftNum] = getElementByName(this.scene.children, 'shaft');
+
 
 			// rope parameters
 			const ropePos =  new THREE.Vector3();
 			ropePos.x = shaft.position.x
 			ropePos.y = shaft.position.y
-			ropePos.z = shaft.position.z + shaftHeight - shaftRad
+			ropePos.z = shaft.position.z - shaftRad + shaftHeight
 
-			const ropeWidth = 0.001
+			const ropeWidth = 0.01
 			const ropeLength = ropePos.z - bricks.position.z - brickHeight/2
+			
+			console.log("rope length", ropeLength)
 			const ropeNumSegmentsY = 1
 			const ropeNumSegmentsZ = 50
 
@@ -337,7 +350,7 @@ function init()
 
 			console.log(this.ropeSoftBody)
 
-			this.ropeSoftBody.setTotalMass(100, false)                  
+			this.ropeSoftBody.setTotalMass(1, false)                  
 			// @ts-ignore
 			Ammo.castObject(this.ropeSoftBody, Ammo.btCollisionObject).getCollisionShape().setMargin(0.04) 
 			this.physics.physicsWorld.addSoftBody(this.ropeSoftBody, 1, -1)
@@ -347,9 +360,91 @@ function init()
 			// Disable deactivation
 			this.ropeSoftBody.setActivationState(4)
 
-			this.ropeSoftBody.appendAnchor(0, shaft.body.ammo, false, 1)
-			this.ropeSoftBody.appendAnchor(ropeNumSegmentsZ, bricks.body.ammo, false, 1)
+			this.ropeSoftBody.appendAnchor(0, this.scene.children[shaftNum].body.ammo, false, 1)
+			this.ropeSoftBody.appendAnchor(ropeNumSegmentsZ, this.scene.children[bricksNum].body.ammo, false, 1)
 
+
+		}
+		createRope2()
+		{
+
+			this.physics.physicsWorld.getWorldInfo().get_m_gravity().setX(0)
+			this.physics.physicsWorld.getWorldInfo().get_m_gravity().setY(0)
+			this.physics.physicsWorld.getWorldInfo().get_m_gravity().setZ(-9.81)
+			// this.physics.physicsWorld.getWorldInfo().get_m_gravity().setZ(0)
+
+			let [bricks, bricksNum] = getElementByName(this.scene.children, 'brick')    
+            let [shaft, shaftNum] = getElementByName(this.scene.children, 'shaft')
+
+			let bricksPosition = new THREE.Vector3();
+			let shaftPosition = new THREE.Vector3();
+			shaftPosition.z = shaft.position.z
+			shaftPosition.y = shaft.position.y
+			shaftPosition.x = shaft.position.x
+
+			const ropePos =  new THREE.Vector3();
+			ropePos.x = shaftPosition.x
+			ropePos.y = shaftPosition.y
+			ropePos.z = shaftPosition.z - shaftRad
+
+			// rope parameters
+			// const ropePos =  new THREE.Vector3();
+			// ropePos.x = shaft.position.x
+			// ropePos.y = shaft.position.y
+			// ropePos.z = shaft.position.z - shaftRad
+
+			const ropeWidth = 0.01
+			// const ropeLength = ropePos.z - bricks.position.z - brickHeight/2
+ 			const ropeLength = ropePos.z - bricksPosition.z - brickHeight/2
+			
+			console.log("rope length", ropeLength)
+			const ropeNumSegmentsY = 1
+			const ropeNumSegmentsZ = 50
+
+
+			const ropeGeometry = new THREE.PlaneGeometry(ropeWidth, ropeLength, ropeNumSegmentsY, ropeNumSegmentsZ)
+			const ropeMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff, side: THREE.DoubleSide })
+
+			this.rope2 = new THREE.Mesh(ropeGeometry, ropeMaterial)
+
+			this.rope2.castShadow = true
+			this.rope2.receiveShadow = true
+			
+			const softBodyHelpers = new Ammo.btSoftBodyHelpers()
+			this.ropeSoftBody
+			
+
+			const ropeStart = new Ammo.btVector3( ropePos.x, ropePos.y, ropePos.z );
+			const ropeEnd = new Ammo.btVector3( ropePos.x, ropePos.y , ropePos.z - ropeLength );
+
+			this.ropeSoftBody2 = softBodyHelpers.CreateRope( 
+				this.physics.physicsWorld.getWorldInfo(), 
+				ropeStart, 
+				ropeEnd, 
+				ropeNumSegmentsZ - 1, 
+				0 
+			);
+
+			const sbConfig = this.ropeSoftBody2.get_m_cfg()
+			sbConfig.set_viterations(100)
+			sbConfig.set_piterations(100)       // the rope is no longer elastic
+
+			console.log(this.ropeSoftBody2)
+
+			this.ropeSoftBody2.setTotalMass(1, false)                  
+			// @ts-ignore
+			Ammo.castObject(this.ropeSoftBody2, Ammo.btCollisionObject).getCollisionShape().setMargin(0.04) 
+			this.physics.physicsWorld.addSoftBody(this.ropeSoftBody2, 1, -1)
+
+			this.rope2.userData.physicsBody = this.ropeSoftBody2
+			
+			// Disable deactivation
+			this.ropeSoftBody2.setActivationState(4)
+
+			// this.ropeSoftBody.appendAnchor(0, this.scene.children[shaftNum].body.ammo, false, 1)
+			// this.ropeSoftBody.appendAnchor(ropeNumSegmentsZ, this.scene.children[bricksNum].body.ammo, false, 1)
+
+			this.ropeSoftBody2.appendAnchor(0, shaft.body.ammo, false, 1)
 
 		}
 

@@ -77,13 +77,13 @@ def robot_move_to(robot, simulation, dt, dest, gain=2, treshold=0.001, qd_max=1,
 def crane_move_to(T_dest, n_sample):
     traj = rtb.ctraj(SE3(end_effector.T), T_dest, n_sample)
     
-    for i in range(100):
+    for i in range(n_sample):
         
         crane.T = SE3.Tx(traj[i].x)
         end_effector.T = SE3.Tx(traj[i].x)*SE3.Ty(traj[i].y)
         shaft.T = SE3.Tx(traj[i].x)*SE3.Ty(traj[i].y)
-        # twist = Twist3.UnitRevolute([1 ,0, 0],[0, traj[i].y, 0.3785], 0)
-        # shaft.T = twist.SE3(traj[i].z/shaft_radius)*shaft.T
+        twist = Twist3.UnitRevolute([1 ,0, 0],[0, traj[i].y, 0.3785], 0)
+        shaft.T = twist.SE3(traj[i].z/shaft_radius)*shaft.T
         print("i : ", i)
         env.step(1/f)
         time.sleep(1/f)
@@ -91,7 +91,11 @@ def crane_move_to(T_dest, n_sample):
 
 def crane_pick_and_place(T_pick, T_place_up, T_place, n_sample):
     crane_move_to(T_pick, n_sample)
+    time.sleep(1)
+    env._send_socket("rope", 'add')
+    time.sleep(1)
     crane_move_to(T_place_up, n_sample)
+
     # robot_move_to(lite6, env, 1/f, T_place_up*SE3.RPY([0, 0, -90], order='xyz', unit='deg'), gain=2, treshold=0.001, qd_max=1)
     # robot_move_to(lite6, env, 1/f, T_place*SE3.RPY([0, 0, -90], order='xyz', unit='deg'), gain=2, treshold=0.001, qd_max=1, move_brick=True)
     # robot_move_to(lite6, env, 1/f, lite6.qz, gain=2, treshold=0.001, qd_max=1)
@@ -136,6 +140,9 @@ if __name__ == "__main__":  # pragma nocover
         color=[50, 50, 50],
         scale=(0.001,) * 3,
     )
+
+    shaft.T = SE3(0, 0, 0)
+
     # brickwall = []
     # for i in range(4):
     #     for j in range(3):
@@ -167,26 +174,53 @@ if __name__ == "__main__":  # pragma nocover
     f=50
 
     T_pick = SE3(brick.T)
-    T_place_up = SE3(0.0, 0.2, 0.2)
+    T_place_up = SE3(0.0, 0.2, 0.1)
     T_place = SE3(0, 0.2, 0.09)
+    print(dir(shaft))
+    # print(type(shaft.T))
+    # for i in range(200):
+    #     twist = Twist3.UnitRevolute([1,0, 0],[SE3(shaft.T).t[0], SE3(shaft.T).t[1], SE3(shaft.T).t[2] + 0.3785], 0)
+
+    #     shaft.T = twist.SE3(0.1)*shaft.T
+    #     env.step(1/15)
+    #     time.sleep(1/15)
 
 
-    crane_move_to(T_pick, 100)
-    env._send_socket("rope", 'add')
 
-    # for i in range(500):
-    #     shaft.T = (0,i)
-    #     env.step(0.1)
-    #     time.sleep(0.1)
+    # crane_move_to(T_pick, 100)
+    print(shaft)
+    
+
+    # for i in range(200):
+    #     twist = Twist3.UnitRevolute([1,0, 0],[shaft.pose[1], shaft.pose[2], shaft.pose[3] + 0.3785], 0)
+
+    #     shaft.T = twist.SE3(0.1)*shaft.T
+    #     env.step(1/15)
+    #     time.sleep(1/15)
+
 
 
 
     # crane_move_to(T_place_up, 100)
+    # brick.T = SE3(1, 0.3, 1)
+    # env.add(brick, collision_enable = True, collisionFlags = 2)
+    # shaft.T = SE3(1, 0.3, 1-0.3785)
+    # env.add(shaft, collision_enable = True,  collisionFlags = 2)
 
-    # crane_pick_and_place(T_pick, T_place_up, T_place, 100)
+    # env._send_socket("rope", 'add')
+    # env._send_socket("rope", 'add')
+
+    crane_pick_and_place(T_pick, T_place_up, T_place, 1000)
+    print(shaft)
+    print(dir(shaft))
+
 
     time.sleep(100)
     env.hold()
 
 
-
+# TODO 
+"""
+Résoudre les soucis avec les ancres
+Réussir à bien contrôler la rotation
+"""
