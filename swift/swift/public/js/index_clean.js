@@ -38,12 +38,13 @@ let framerate = 20;
 let autoclose = true;
 
 let shaftHeight = 0.3785
-let shaftRad = 0.015
-let pulleyRadMin = 15
-let pulleyRadMax = 20
-let pulleyHeightMax = 5
+// let shaftRad = 0.25 	
+let shaftRad = 0.01		// for the cube		
+let pulleyRadMin = 150
+let pulleyRadMax = 200
+let pulleyHeightMax = 500
 let pulleyHeightMin = 10
-let brickHeight = 0.03
+let brickHeight = 0.3
 
 // Open the connection to python
 //let port = parseInt(window.location.pathname.slice(1));
@@ -343,7 +344,8 @@ function init()
 			// this.physics.physicsWorld.getWorldInfo().get_m_gravity().setZ(0)
 
 			let [bricks, bricksNum] = getElementByName(this.scene.children, 'brick');
-            let [shaft, shaftNum] = getElementByName(this.scene.children, 'shaft');
+            // let [shaft, shaftNum] = getElementByName(this.scene.children, 'shaft3');
+			let [shaft, shaftNum] = getElementByName(this.scene.children, 'Cube');
 			// let shaft = this.pulley[0]
 
 			// rope parameters
@@ -391,7 +393,7 @@ function init()
 
 			this.ropeSoftBody.setTotalMass(1, false)                  
 			// @ts-ignore
-			Ammo.castObject(this.ropeSoftBody, Ammo.btCollisionObject).getCollisionShape().setMargin(0.04) 
+			Ammo.castObject(this.ropeSoftBody, Ammo.btCollisionObject).getCollisionShape().setMargin(0.05) 
 			this.physics.physicsWorld.addSoftBody(this.ropeSoftBody, 1, -1)
 
 			this.rope.userData.physicsBody = this.ropeSoftBody
@@ -400,7 +402,6 @@ function init()
 			this.ropeSoftBody.setActivationState(4)
 
 			this.ropeSoftBody.appendAnchor(0, this.scene.children[shaftNum].body.ammo, false, 1)
-			// this.ropeSoftBody.appendAnchor(0, shaft.body.ammo, false, 1)
 			this.ropeSoftBody.appendAnchor(ropeNumSegmentsZ, this.scene.children[bricksNum].body.ammo, false, 1)
 
 

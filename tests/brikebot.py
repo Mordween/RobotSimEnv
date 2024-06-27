@@ -81,7 +81,7 @@ def crane_move_to(T_dest, n_sample):
         
         crane.T = SE3.Tx(traj[i].x)
         end_effector.T = SE3.Tx(traj[i].x)*SE3.Ty(traj[i].y)
-        shaft.T = SE3.Tx(traj[i].x)*SE3.Ty(traj[i].y)*SE3.Tz(0.3785)
+        shaft.T = SE3.Tx(traj[i].x)*SE3.Ty(traj[i].y)*SE3.Tz(3.785)
         # twist = Twist3.UnitRevolute([1 ,0, 0],[0, traj[i].y, 0.3785], 0)
         # shaft.T = twist.SE3(traj[i].z/shaft_radius)*shaft.T
         print("i : ", i)
@@ -93,13 +93,18 @@ def crane_pick_and_place(T_pick, T_place_up, T_place, n_sample):
     crane_move_to(T_pick, n_sample)
     time.sleep(1)
     env._send_socket("rope", 'add')
-    time.sleep(1)
-    for i in range(n_sample):
-        twist = Twist3.UnitRevolute([1 ,0, 0],[SE3(shaft.T).x, SE3(shaft.T).y, SE3(shaft.T).z], 0)
-        shaft.T = twist.SE3((i/(500*n_sample))/shaft_radius)*shaft.T
+    time.sleep(10)
+    # for i in range(n_sample):
+    #     twist = Twist3.UnitRevolute([1 ,0, 0],[SE3(shaft.T).x, SE3(shaft.T).y, SE3(shaft.T).z], 0)
+    #     shaft.T = twist.SE3((i/(1000*n_sample))/shaft_radius)*shaft.T
 
+    #     env.step()
+
+    for i in range(n_sample):
+        cube.T = SE3(2, 3-(i/100), 3.785+0.5)
         env.step()
-    time.sleep(1)
+    
+    time.sleep(100)
     crane_move_to(T_place_up, n_sample)
 
     # robot_move_to(lite6, env, 1/f, T_place_up*SE3.RPY([0, 0, -90], order='xyz', unit='deg'), gain=2, treshold=0.001, qd_max=1)
@@ -121,33 +126,39 @@ if __name__ == "__main__":  # pragma nocover
     crane = Mesh(
         filename=str(f"{os.path.expanduser('~')}/Documents/swiftRepare/tests/urdf-object/crane_body.glb"),
         color=[34, 143, 201],
-        scale=(0.001,) * 3,
+        scale=(0.01,) * 3,
     )
 
     end_effector = Mesh(
         filename=("/home/fari/Documents/swiftRepare/tests/urdf-object/end_effector.glb"),
         color=[31, 184, 72],
-        scale=(0.001,) * 3,
+        scale=(0.01,) * 3,
     )
 
     shaft = Mesh(
-        filename=("/home/fari/Documents/swiftRepare/tests/urdf-object/shaft1.glb"),
+        filename=("/home/fari/Documents/swiftRepare/tests/urdf-object/shaft3.glb"),
         color=[31, 184, 72],
-        scale=(0.001,) * 3,
+        scale=(0.01,) * 3,
     )
 
     rails= Mesh(    
         filename=("/home/fari/Documents/swiftRepare/tests/urdf-object/rails.glb"),
         color=[240, 103, 103],
-        scale=(0.001,) * 3,
+        scale=(0.01,) * 3,
     )
     brick = Mesh(
         filename=("/home/fari/Documents/swiftRepare/tests/urdf-object/brick.glb"),
         color=[50, 50, 50],
-        scale=(0.001,) * 3,
+        scale=(0.01,) * 3,
+    )
+    cube = Mesh(
+        filename=("/home/fari/Documents/swiftRepare/tests/urdf-object/cube.glb"),
+        color=[50, 50, 50],
+        scale=(0.01,) * 3,
     )
 
-    shaft.T = SE3(0, 0, 0.3785)
+    shaft.T = SE3(0, 0, 3.785)
+    cube.T = SE3(2, 3, 3.785+0.5)
 
     # brickwall = []
     # for i in range(4):
@@ -158,20 +169,22 @@ if __name__ == "__main__":  # pragma nocover
     #             brickwall.append(b)
 
 
-    brick.T = SE3(0.2, 0.3, 0.03)
-
+    # brick.T = SE3(0.2, 0.3, 0.03)
+    brick.T = SE3(2, 3, 0.3)
 
     lite6 = rtb.models.Lite6()
     lite6.base = SE3(0.4, 0, 0.0)*SE3.Rz(pi/2)
+    print(dir(lite6))
 
     env.add(crane, collision_enable = False)
     # for b in brickwall:
     #     env.add(b, collision_enable = True, collisionFlags = 0)
     env.add(brick, collision_enable = True, collisionFlags = 0, mass = 0.5)
-    env.add(end_effector, collision_enable = True)
-    env.add(shaft, collision_enable = True, mass = 10000000)
+    # env.add(end_effector, collision_enable = False)
+    env.add(shaft, collision_enable = True, mass = 100000)
     env.add(rails, collision_enable = False)
-    # env.add(lite6, collision_enable = False) 
+    # env.add(lite6, collision_enable = False)
+    env.add(cube, collision_enable = True) 
 
     time.sleep(5)
 
@@ -179,9 +192,12 @@ if __name__ == "__main__":  # pragma nocover
     crane.T = SE3(0, 0, 0.)
     f=50
 
-    T_pick = SE3(brick.T)
-    T_place_up = SE3(0.0, 0.2, 0.1)
-    T_place = SE3(0, 0.2, 0.09)
+    # T_pick = SE3(brick.T)
+    T_pick = SE3(2, 3-0.5, 0.3)
+    # T_place_up = SE3(0.0, 0.2, 0.1)
+    # T_place = SE3(0, 0.2, 0.09)
+    T_place_up = SE3(0.0, 2, 1)
+    T_place = SE3(0, 2, 0.9)
     print(dir(shaft))
     # print(type(shaft.T))
     # for i in range(200):
