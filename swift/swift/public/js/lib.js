@@ -27,9 +27,9 @@ function sleep(milliseconds) {
     } while (currentDate - date < milliseconds);
   }
 
-function load(ob, scene, color, cb, collision_enable, collisionFlags) {
+function load(ob, scene, color, cb, collision_enable, collisionFlags, mass) {
     if (ob.stype === 'mesh') {
-        loadMesh(ob, scene, cb, collision_enable, collisionFlags);
+        loadMesh(ob, scene, cb, collision_enable, collisionFlags, mass);
     } else if (ob.stype === 'box') {
         loadBox(ob, scene, color, cb);
     } else if (ob.stype === 'sphere') {
@@ -94,7 +94,7 @@ function loadCylinder(ob, scene, color, cb) {
     cb();
 }
 
-function loadMesh(ob, scene, cb, collision_enable, collisionFlags) {
+function loadMesh(ob, scene, cb, collision_enable, collisionFlags, mass) {
 
     let ext = ob.filename.split('.').pop();
 
@@ -161,7 +161,7 @@ function loadMesh(ob, scene, cb, collision_enable, collisionFlags) {
             scene.add.mesh(mesh)           // BUG Uncaught TypeError: r.onBeforeRender is not a function
             console.log("scene", scene)
 
-            scene.physics.addExisting(mesh, { collisionFlags: 2, shape: 'mesh', mass : 0  });            
+            scene.physics.addExisting(mesh, { collisionFlags: collisionFlags, shape: 'mesh', mass : mass });            
             ob['mesh'] = mesh;
             ob['loaded'] = true;
             cb();
@@ -262,8 +262,7 @@ function loadMesh(ob, scene, cb, collision_enable, collisionFlags) {
                 scene.add.mesh(mesh);
                 if(collision_enable == true)
                 {
-                    console.log("before bug???")
-                    scene.physics.addExisting(mesh, { collisionFlags: collisionFlags, shape: 'mesh', mass : 1});
+                    scene.physics.addExisting(mesh, { collisionFlags: collisionFlags, shape: 'mesh', mass : mass});
                 }
 
                 ob['mesh'] = mesh;
@@ -478,7 +477,7 @@ class Robot{
 }
 
 class Shape {
-    constructor(scene, ob, collision_enable, collisionFlags) {
+    constructor(scene, ob, collision_enable, collisionFlags, mass) {
       this.ob = ob;
       let color = Math.random() * 0xffffff;
       this.loaded = 0;
@@ -486,7 +485,7 @@ class Shape {
       let cb = () => {
         this.loaded = 1;
       };
-      load(ob, scene, color, cb, collision_enable, collisionFlags);
+      load(ob, scene, color, cb, collision_enable, collisionFlags, mass);
     }
   
     set_pose(pose) {                // --------------------------------------------------------------------------------------------------------------
@@ -518,8 +517,8 @@ class Compound {
       this.scene = scene;
     }
   
-    add_shape(ob, collision_enable, collisionFlags) {
-      let shape = new Shape(this.scene, ob, collision_enable, collisionFlags);
+    add_shape(ob, collision_enable, collisionFlags, mass) {
+      let shape = new Shape(this.scene, ob, collision_enable, collisionFlags, mass);
       this.shapes.push(shape);
     }
   

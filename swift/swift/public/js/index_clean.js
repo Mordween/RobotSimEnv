@@ -38,7 +38,11 @@ let framerate = 20;
 let autoclose = true;
 
 let shaftHeight = 0.3785
-let shaftRad = 0.005
+let shaftRad = 0.015
+let pulleyRadMin = 15
+let pulleyRadMax = 20
+let pulleyHeightMax = 5
+let pulleyHeightMin = 10
 let brickHeight = 0.03
 
 // Open the connection to python
@@ -97,8 +101,9 @@ class WebSocketCom {
 			// Assuming data is a list of shapes
 			let collision_enable = data[0];
             let collisionFlags = data[1];
-			for (let shapeData of data.slice(2)) {
-				compound.add_shape(shapeData, collision_enable, collisionFlags);
+			let mass = data[2];
+			for (let shapeData of data.slice(3)) {
+				compound.add_shape(shapeData, collision_enable, collisionFlags, mass);
 			}
 			
 			compound.id = compounds.length;
@@ -186,10 +191,6 @@ class WebSocketCom {
 			{
 				scene.createRope()
 			}
-			else if(data === 'add2')
-			{
-				scene.createRope2()
-			}
 			else if(data === 'pop')
 			{
 				scene.popRope()
@@ -201,13 +202,36 @@ class WebSocketCom {
 
 
 			this.ws.send(0);
+		}
+		else if (func === 'shaft') 
+		{
+			if(data[0] === 'add')
+			{
+				let position = data[1];
+				let scale = data[2];
+				scene.createPulley(position, scale);
+			}
+			else if(data[0] === 'rotation')
+			{
+				let pulleyRotValue = data[1]
+				for (let i = 0; i < scene.pulley.length; i++) {
+					scene.pulley[i].rotation.y = pulleyRotValue;
+					scene.pulley[i].body.needUpdate = true
+				}
+			}
+			else
+			{
+				console.log("This fonction is not implemented! ")
+			}
+
+			this.ws.send(0);
 		} 
 	}
 }
 
 let webSocs = new WebSocketCom(53000);
 webSocs.Init();
- 
+
 
 function startSim(port) {
 	console.log("port", port)
@@ -294,7 +318,22 @@ function init()
 		{	
 
         }
+		createPulley(position, scale)
+		{
+			const pulleyData = [
+				{x: position[0], y: position[1], 													z: position[2], height: pulleyHeightMin*scale, radiusTop: pulleyRadMin*scale, radiusBottom: pulleyRadMin*scale},    
+				{x: position[0], y: position[1] + ((pulleyHeightMax + pulleyHeightMin)*scale)/2,	z: position[2], height: pulleyHeightMax*scale, radiusTop: pulleyRadMax*scale, radiusBottom: pulleyRadMax*scale},
+				{x: position[0], y: position[1] - ((pulleyHeightMax + pulleyHeightMin)*scale)/2,	z: position[2], height: pulleyHeightMax*scale, radiusTop: pulleyRadMax*scale, radiusBottom: pulleyRadMax*scale},
+				]
+				let pos = 0
+				this.pulley = pulleyData.map(d => {
+					let cylinder = this.add.cylinder(d) 
+					this.physics.add.existing(cylinder, { shape: 'convex', collisionFlags :(pos === 0?2:2), mass: 100000 })
+					pos = 1
+					return cylinder
+				})
 
+		}
 		createRope()
 		{
 
@@ -305,13 +344,13 @@ function init()
 
 			let [bricks, bricksNum] = getElementByName(this.scene.children, 'brick');
             let [shaft, shaftNum] = getElementByName(this.scene.children, 'shaft');
-
+			// let shaft = this.pulley[0]
 
 			// rope parameters
 			const ropePos =  new THREE.Vector3();
 			ropePos.x = shaft.position.x
 			ropePos.y = shaft.position.y
-			ropePos.z = shaft.position.z - shaftRad + shaftHeight
+			ropePos.z = shaft.position.z - shaftRad
 
 			const ropeWidth = 0.01
 			const ropeLength = ropePos.z - bricks.position.z - brickHeight/2
@@ -361,93 +400,11 @@ function init()
 			this.ropeSoftBody.setActivationState(4)
 
 			this.ropeSoftBody.appendAnchor(0, this.scene.children[shaftNum].body.ammo, false, 1)
+			// this.ropeSoftBody.appendAnchor(0, shaft.body.ammo, false, 1)
 			this.ropeSoftBody.appendAnchor(ropeNumSegmentsZ, this.scene.children[bricksNum].body.ammo, false, 1)
 
 
 		}
-		createRope2()
-		{
-
-			this.physics.physicsWorld.getWorldInfo().get_m_gravity().setX(0)
-			this.physics.physicsWorld.getWorldInfo().get_m_gravity().setY(0)
-			this.physics.physicsWorld.getWorldInfo().get_m_gravity().setZ(-9.81)
-			// this.physics.physicsWorld.getWorldInfo().get_m_gravity().setZ(0)
-
-			let [bricks, bricksNum] = getElementByName(this.scene.children, 'brick')    
-            let [shaft, shaftNum] = getElementByName(this.scene.children, 'shaft')
-
-			let bricksPosition = new THREE.Vector3();
-			let shaftPosition = new THREE.Vector3();
-			shaftPosition.z = shaft.position.z
-			shaftPosition.y = shaft.position.y
-			shaftPosition.x = shaft.position.x
-
-			const ropePos =  new THREE.Vector3();
-			ropePos.x = shaftPosition.x
-			ropePos.y = shaftPosition.y
-			ropePos.z = shaftPosition.z - shaftRad
-
-			// rope parameters
-			// const ropePos =  new THREE.Vector3();
-			// ropePos.x = shaft.position.x
-			// ropePos.y = shaft.position.y
-			// ropePos.z = shaft.position.z - shaftRad
-
-			const ropeWidth = 0.01
-			// const ropeLength = ropePos.z - bricks.position.z - brickHeight/2
- 			const ropeLength = ropePos.z - bricksPosition.z - brickHeight/2
-			
-			console.log("rope length", ropeLength)
-			const ropeNumSegmentsY = 1
-			const ropeNumSegmentsZ = 50
-
-
-			const ropeGeometry = new THREE.PlaneGeometry(ropeWidth, ropeLength, ropeNumSegmentsY, ropeNumSegmentsZ)
-			const ropeMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff, side: THREE.DoubleSide })
-
-			this.rope2 = new THREE.Mesh(ropeGeometry, ropeMaterial)
-
-			this.rope2.castShadow = true
-			this.rope2.receiveShadow = true
-			
-			const softBodyHelpers = new Ammo.btSoftBodyHelpers()
-			this.ropeSoftBody
-			
-
-			const ropeStart = new Ammo.btVector3( ropePos.x, ropePos.y, ropePos.z );
-			const ropeEnd = new Ammo.btVector3( ropePos.x, ropePos.y , ropePos.z - ropeLength );
-
-			this.ropeSoftBody2 = softBodyHelpers.CreateRope( 
-				this.physics.physicsWorld.getWorldInfo(), 
-				ropeStart, 
-				ropeEnd, 
-				ropeNumSegmentsZ - 1, 
-				0 
-			);
-
-			const sbConfig = this.ropeSoftBody2.get_m_cfg()
-			sbConfig.set_viterations(100)
-			sbConfig.set_piterations(100)       // the rope is no longer elastic
-
-			console.log(this.ropeSoftBody2)
-
-			this.ropeSoftBody2.setTotalMass(1, false)                  
-			// @ts-ignore
-			Ammo.castObject(this.ropeSoftBody2, Ammo.btCollisionObject).getCollisionShape().setMargin(0.04) 
-			this.physics.physicsWorld.addSoftBody(this.ropeSoftBody2, 1, -1)
-
-			this.rope2.userData.physicsBody = this.ropeSoftBody2
-			
-			// Disable deactivation
-			this.ropeSoftBody2.setActivationState(4)
-
-			// this.ropeSoftBody.appendAnchor(0, this.scene.children[shaftNum].body.ammo, false, 1)
-			// this.ropeSoftBody.appendAnchor(ropeNumSegmentsZ, this.scene.children[bricksNum].body.ammo, false, 1)
-
-			this.ropeSoftBody2.appendAnchor(0, shaft.body.ammo, false, 1)
-
-		}
-
 		popRope()
 		{
 			this.ropeSoftBody.m_anchors.pop_back()

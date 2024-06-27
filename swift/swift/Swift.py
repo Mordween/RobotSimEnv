@@ -326,7 +326,7 @@ class Swift:
     #  Methods to interface with the robots created in other environemnts
     #
 
-    def add(self, ob, robot_alpha=1.0, collision_alpha=0.0, readonly=False, collision_enable=False, collisionFlags = 2):
+    def add(self, ob, robot_alpha=1.0, collision_alpha=0.0, readonly=False, collision_enable=False, collisionFlags = 2, mass = 1):
         """
         Add a robot to the graphical scene
 
@@ -362,7 +362,7 @@ class Swift:
             ob._propogate_scene_tree()
             ob._added_to_swift = True
             if not self.headless:
-                id = int(self._send_socket("shape", [collision_enable, collisionFlags ,ob.to_dict()]))
+                id = int(self._send_socket("shape", [collision_enable, collisionFlags ,mass, ob.to_dict()]))
 
                 while not int(self._send_socket("shape_mounted", [id, 1])):
                     time.sleep(0.1)
@@ -406,7 +406,7 @@ class Swift:
                     robot_alpha=robot_alpha, collision_alpha=collision_alpha
                 )
 
-                id = self._send_socket("shape", [collision_enable, collisionFlags] + robob)
+                id = self._send_socket("shape", [collision_enable, collisionFlags, mass] + robob)
                 print(robob)
                 while not int(self._send_socket("shape_mounted", [id, len(robob)])):
                     time.sleep(0.1)

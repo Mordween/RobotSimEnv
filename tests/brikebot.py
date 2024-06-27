@@ -77,13 +77,13 @@ def robot_move_to(robot, simulation, dt, dest, gain=2, treshold=0.001, qd_max=1,
 def crane_move_to(T_dest, n_sample):
     traj = rtb.ctraj(SE3(end_effector.T), T_dest, n_sample)
     
-    for i in range(n_sample):
+    for i in range(n_sample ):
         
         crane.T = SE3.Tx(traj[i].x)
         end_effector.T = SE3.Tx(traj[i].x)*SE3.Ty(traj[i].y)
-        shaft.T = SE3.Tx(traj[i].x)*SE3.Ty(traj[i].y)
-        twist = Twist3.UnitRevolute([1 ,0, 0],[0, traj[i].y, 0.3785], 0)
-        shaft.T = twist.SE3(traj[i].z/shaft_radius)*shaft.T
+        shaft.T = SE3.Tx(traj[i].x)*SE3.Ty(traj[i].y)*SE3.Tz(0.3785)
+        # twist = Twist3.UnitRevolute([1 ,0, 0],[0, traj[i].y, 0.3785], 0)
+        # shaft.T = twist.SE3(traj[i].z/shaft_radius)*shaft.T
         print("i : ", i)
         env.step(1/f)
         time.sleep(1/f)
@@ -93,6 +93,12 @@ def crane_pick_and_place(T_pick, T_place_up, T_place, n_sample):
     crane_move_to(T_pick, n_sample)
     time.sleep(1)
     env._send_socket("rope", 'add')
+    time.sleep(1)
+    for i in range(n_sample):
+        twist = Twist3.UnitRevolute([1 ,0, 0],[SE3(shaft.T).x, SE3(shaft.T).y, SE3(shaft.T).z], 0)
+        shaft.T = twist.SE3((i/(500*n_sample))/shaft_radius)*shaft.T
+
+        env.step()
     time.sleep(1)
     crane_move_to(T_place_up, n_sample)
 
@@ -125,9 +131,9 @@ if __name__ == "__main__":  # pragma nocover
     )
 
     shaft = Mesh(
-    filename=("/home/fari/Documents/swiftRepare/tests/urdf-object/shaft.glb"),
-    color=[31, 184, 72],
-    scale=(0.001,) * 3,
+        filename=("/home/fari/Documents/swiftRepare/tests/urdf-object/shaft1.glb"),
+        color=[31, 184, 72],
+        scale=(0.001,) * 3,
     )
 
     rails= Mesh(    
@@ -141,7 +147,7 @@ if __name__ == "__main__":  # pragma nocover
         scale=(0.001,) * 3,
     )
 
-    shaft.T = SE3(0, 0, 0)
+    shaft.T = SE3(0, 0, 0.3785)
 
     # brickwall = []
     # for i in range(4):
@@ -154,23 +160,23 @@ if __name__ == "__main__":  # pragma nocover
 
     brick.T = SE3(0.2, 0.3, 0.03)
 
+
     lite6 = rtb.models.Lite6()
     lite6.base = SE3(0.4, 0, 0.0)*SE3.Rz(pi/2)
 
     env.add(crane, collision_enable = False)
     # for b in brickwall:
     #     env.add(b, collision_enable = True, collisionFlags = 0)
-    env.add(brick, collision_enable = True, collisionFlags = 0)
+    env.add(brick, collision_enable = True, collisionFlags = 0, mass = 0.5)
     env.add(end_effector, collision_enable = True)
-    env.add(shaft, collision_enable = True)
+    env.add(shaft, collision_enable = True, mass = 10000000)
     env.add(rails, collision_enable = False)
     # env.add(lite6, collision_enable = False) 
 
     time.sleep(5)
 
     end_effector.T = SE3(0, 0, 0.0)
-    crane.T = SE3(0, 0, 0.0)
-    brick.T = SE3(0.2, 0.3, 0)
+    crane.T = SE3(0, 0, 0.)
     f=50
 
     T_pick = SE3(brick.T)
@@ -188,17 +194,7 @@ if __name__ == "__main__":  # pragma nocover
 
 
     # crane_move_to(T_pick, 100)
-    print(shaft)
     
-
-    # for i in range(200):
-    #     twist = Twist3.UnitRevolute([1,0, 0],[shaft.pose[1], shaft.pose[2], shaft.pose[3] + 0.3785], 0)
-
-    #     shaft.T = twist.SE3(0.1)*shaft.T
-    #     env.step(1/15)
-    #     time.sleep(1/15)
-
-
 
 
     # crane_move_to(T_place_up, 100)
@@ -207,10 +203,8 @@ if __name__ == "__main__":  # pragma nocover
     # shaft.T = SE3(1, 0.3, 1-0.3785)
     # env.add(shaft, collision_enable = True,  collisionFlags = 2)
 
-    # env._send_socket("rope", 'add')
-    # env._send_socket("rope", 'add')
 
-    crane_pick_and_place(T_pick, T_place_up, T_place, 1000)
+    crane_pick_and_place(T_pick, T_place_up, T_place, 400)
     print(shaft)
     print(dir(shaft))
 
