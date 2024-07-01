@@ -84,6 +84,7 @@ def crane_move_to(T_dest, n_sample):
         shaftLeft.T = SE3.Tx(traj[i].x)*SE3.Ty(traj[i].y)*SE3.Tz(3.785)
         shaftCenter.T = SE3.Tx(traj[i].x)*SE3.Ty(traj[i].y)*SE3.Tz(3.785)
         shaftRight.T = SE3.Tx(traj[i].x)*SE3.Ty(traj[i].y)*SE3.Tz(3.785)
+        cube.T = SE3.Tx(traj[i].x)*SE3.Ty(traj[i].y+0.32)*SE3.Tz(SE3(cube.T).z)
         # twist = Twist3.UnitRevolute([1 ,0, 0],[0, traj[i].y, 0.3785], 0)
         # shaft.T = twist.SE3(traj[i].z/shaft_radius)*shaft.T
         print("i : ", i)
@@ -95,20 +96,21 @@ def crane_pick_and_place(T_pick, T_place_up, T_place, n_sample):
     crane_move_to(T_pick, n_sample)
     time.sleep(1)
     env._send_socket("rope", 'add')
-    time.sleep(5)
-    for i in range(n_sample):
-        twist = Twist3.UnitRevolute([1 ,0, 0],[SE3(shaftCenter.T).x, SE3(shaftCenter.T).y, SE3(shaftCenter.T).z], 0)
-        shaftLeft.T = twist.SE3((i/(1000*n_sample))/shaft_radius)*shaftCenter.T
-        shaftCenter.T = twist.SE3((i/(1000*n_sample))/shaft_radius)*shaftCenter.T
-        shaftRight.T = twist.SE3((i/(1000*n_sample))/shaft_radius)*shaftCenter.T
-
-        env.step()
-
+    print(brick.T)
+    time.sleep(10)
     # for i in range(n_sample):
-    #     cube.T = SE3(2, 3-(i/100), 3.785+0.5)
+    #     twist = Twist3.UnitRevolute([1 ,0, 0],[SE3(shaftCenter.T).x, SE3(shaftCenter.T).y, SE3(shaftCenter.T).z], 0)
+    #     shaftLeft.T = twist.SE3((i/(1000*n_sample))/shaft_radius)*shaftCenter.T
+    #     shaftCenter.T = twist.SE3((i/(1000*n_sample))/shaft_radius)*shaftCenter.T
+    #     shaftRight.T = twist.SE3((i/(1000*n_sample))/shaft_radius)*shaftCenter.T
+
     #     env.step()
+
+    for i in range(n_sample):
+        cube.T = SE3(2, 3, 3.785+0.5+(i/130))
+        env.step()
     
-    time.sleep(100)
+    time.sleep(10)
     crane_move_to(T_place_up, n_sample)
 
     # robot_move_to(lite6, env, 1/f, T_place_up*SE3.RPY([0, 0, -90], order='xyz', unit='deg'), gain=2, treshold=0.001, qd_max=1)
@@ -187,7 +189,7 @@ if __name__ == "__main__":  # pragma nocover
     shaftCenter.T = SE3(0, 0, 3.785)
     shaftRight.T = SE3(0, 0, 3.785)
 
-    cube.T = SE3(2, 3, 3.785+0.5)
+    cube.T = SE3(0, 0-0.32, 3.785+0.5)
 
     # brickwall = []
     # for i in range(4):
@@ -199,7 +201,7 @@ if __name__ == "__main__":  # pragma nocover
 
 
     # brick.T = SE3(0.2, 0.3, 0.03)
-    brick.T = SE3(2, 3, 0.3)
+    brick.T = SE3(2, 3, 0.16)
 
     lite6 = rtb.models.Lite6()
     lite6.base = SE3(0.4, 0, 0.0)*SE3.Rz(pi/2)
@@ -211,10 +213,10 @@ if __name__ == "__main__":  # pragma nocover
     env.add(brick, collision_enable = True, collisionFlags = 0, mass = 0.5)
     # env.add(end_effector, collision_enable = False)
     # env.add(shaft, collision_enable = True, mass = 100000)
-    env.add(shaftLeft, collision_enable = True, mass = 100000)
+    env.add(shaftLeft, collision_enable = True, mass = 100)
     # env.add(shaftCenter, collision_enable = True, mass = 100000)
-    env.add(shaftCenter, collision_enable = True, mass = 100000)
-    env.add(shaftRight, collision_enable = True, mass = 100000)
+    env.add(shaftCenter, collision_enable = True, mass = 100)
+    env.add(shaftRight, collision_enable = True, mass = 100)
     env.add(rails, collision_enable = False)
     # env.add(lite6, collision_enable = False)
     env.add(cube, collision_enable = True) 
@@ -225,8 +227,8 @@ if __name__ == "__main__":  # pragma nocover
     crane.T = SE3(0, 0, 0.)
     f=50
 
-    T_pick = SE3(brick.T)
-    # T_pick = SE3(2, 3-0.5, 0.3)
+    # T_pick = SE3(brick.T)
+    T_pick = SE3(2, 3-0.32, 0.3)
     # T_place_up = SE3(0.0, 0.2, 0.1)
     # T_place = SE3(0, 0.2, 0.09)
     T_place_up = SE3(0.0, 2, 1)
@@ -262,8 +264,3 @@ if __name__ == "__main__":  # pragma nocover
     env.hold()
 
 
-# TODO 
-"""
-Résoudre les soucis avec les ancres
-Réussir à bien contrôler la rotation
-"""

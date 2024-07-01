@@ -38,8 +38,9 @@ let framerate = 20;
 let autoclose = true;
 
 let shaftHeight = 0.3785
-let shaftRad = 0.25 	
-// let shaftRad = 0.01		// for the cube		
+// let shaftRad = 0.25 	
+// let shaftRad = 0.33 
+let shaftRad = 0.01		// for the cube		
 let pulleyRadMin = 150
 let pulleyRadMax = 200
 let pulleyHeightMax = 500
@@ -345,15 +346,22 @@ function init()
 
 			let [bricks, bricksNum] = getElementByName(this.scene.children, 'brick');
             // let [shaft, shaftNum] = getElementByName(this.scene.children, 'shaft3');
-			// let [shaft, shaftNum] = getElementByName(this.scene.children, 'Cube');
+			let [shaft, shaftNum] = getElementByName(this.scene.children, 'Cube');
 			// let shaft = this.pulley[0]
 			// let [shaft, shaftNum] = getElementByName(this.scene.children, 'shaftCenter');
-			let [shaft, shaftNum] = getElementByName(this.scene.children, 'shaftCenterC');
+			// let [shaft, shaftNum] = getElementByName(this.scene.children, 'shaftCenterC');
+
+			console.log(shaft)
+			console.log(bricks)
 
 			// rope parameters
 			const ropePos =  new THREE.Vector3();
-			ropePos.x = shaft.position.x
-			ropePos.y = shaft.position.y
+			// ropePos.x = shaft.position.x
+			// ropePos.y = shaft.position.y
+			// ropePos.z = shaft.position.z - shaftRad
+
+			ropePos.x = bricks.position.x
+			ropePos.y = bricks.position.y
 			ropePos.z = shaft.position.z - shaftRad
 
 			const ropeWidth = 0.01
@@ -405,6 +413,7 @@ function init()
 
 			this.ropeSoftBody.appendAnchor(0, this.scene.children[shaftNum].body.ammo, false, 1)
 			this.ropeSoftBody.appendAnchor(ropeNumSegmentsZ, this.scene.children[bricksNum].body.ammo, false, 1)
+
 
 
 		}
