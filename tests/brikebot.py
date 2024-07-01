@@ -74,7 +74,7 @@ def robot_move_to(robot, simulation, dt, dest, gain=2, treshold=0.001, qd_max=1,
         return arrived, robot.q
 
 
-def crane_move_to(T_dest, n_sample):
+def crane_move_to(T_dest, n_sample, shaftCenterD = 0.32):
     traj = rtb.ctraj(SE3(end_effector.T), T_dest, n_sample)
     
     for i in range(n_sample ):
@@ -84,7 +84,7 @@ def crane_move_to(T_dest, n_sample):
         shaftLeft.T = SE3.Tx(traj[i].x)*SE3.Ty(traj[i].y)*SE3.Tz(3.785)
         shaftCenter.T = SE3.Tx(traj[i].x)*SE3.Ty(traj[i].y)*SE3.Tz(3.785)
         shaftRight.T = SE3.Tx(traj[i].x)*SE3.Ty(traj[i].y)*SE3.Tz(3.785)
-        cube.T = SE3.Tx(traj[i].x)*SE3.Ty(traj[i].y+0.32)*SE3.Tz(SE3(cube.T).z)
+        cube.T = SE3.Tx(traj[i].x)*SE3.Ty(traj[i].y+shaftCenterD)*SE3.Tz(SE3(cube.T).z)
         # twist = Twist3.UnitRevolute([1 ,0, 0],[0, traj[i].y, 0.3785], 0)
         # shaft.T = twist.SE3(traj[i].z/shaft_radius)*shaft.T
         print("i : ", i)
@@ -106,12 +106,16 @@ def crane_pick_and_place(T_pick, T_place_up, T_place, n_sample):
 
     #     env.step()
 
+    for i in range (70):
+        cube.T = SE3(SE3(cube.T).x, SE3(cube.T).y-(1/1000), SE3(cube.T).z)
+        env.step()
+
     for i in range(n_sample):
-        cube.T = SE3(2, 3, 3.785+0.5+(i/130))
+        cube.T = SE3(SE3(cube.T).x, SE3(cube.T).y, SE3(cube.T).z + (1/130))
         env.step()
     
     time.sleep(10)
-    crane_move_to(T_place_up, n_sample)
+    crane_move_to(T_place_up, n_sample, 0.25)
 
     # robot_move_to(lite6, env, 1/f, T_place_up*SE3.RPY([0, 0, -90], order='xyz', unit='deg'), gain=2, treshold=0.001, qd_max=1)
     # robot_move_to(lite6, env, 1/f, T_place*SE3.RPY([0, 0, -90], order='xyz', unit='deg'), gain=2, treshold=0.001, qd_max=1, move_brick=True)
@@ -189,7 +193,7 @@ if __name__ == "__main__":  # pragma nocover
     shaftCenter.T = SE3(0, 0, 3.785)
     shaftRight.T = SE3(0, 0, 3.785)
 
-    cube.T = SE3(0, 0-0.32, 3.785+0.5)
+    cube.T = SE3(0, 0+0.32, 3.785+0.5)
 
     # brickwall = []
     # for i in range(4):

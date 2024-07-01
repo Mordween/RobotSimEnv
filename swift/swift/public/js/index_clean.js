@@ -403,7 +403,7 @@ function init()
 
 			this.ropeSoftBody.setTotalMass(1, false)                  
 			// @ts-ignore
-			Ammo.castObject(this.ropeSoftBody, Ammo.btCollisionObject).getCollisionShape().setMargin(0.05) 
+			Ammo.castObject(this.ropeSoftBody, Ammo.btCollisionObject).getCollisionShape().setMargin(0.01) 
 			this.physics.physicsWorld.addSoftBody(this.ropeSoftBody, 1, -1)
 
 			this.rope.userData.physicsBody = this.ropeSoftBody
