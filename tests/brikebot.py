@@ -150,8 +150,13 @@ if __name__ == "__main__":  # pragma nocover
         color=[31, 184, 72],
         scale=(0.01,) * 3,
     )
+    # shaftCenter = Mesh(
+    #     filename=("/home/fari/Documents/swiftRepare/tests/urdf-object/shaftPart/shaftCenter.glb"),
+    #     color=[31, 184, 72],
+    #     scale=(0.01,) * 3,
+    # )
     shaftCenter = Mesh(
-        filename=("/home/fari/Documents/swiftRepare/tests/urdf-object/shaftPart/shaftCenter.glb"),
+        filename=("/home/fari/Documents/swiftRepare/tests/urdf-object/shaftPart/shaftCenterC.glb"),
         color=[31, 184, 72],
         scale=(0.01,) * 3,
     )
@@ -207,6 +212,7 @@ if __name__ == "__main__":  # pragma nocover
     # env.add(end_effector, collision_enable = False)
     # env.add(shaft, collision_enable = True, mass = 100000)
     env.add(shaftLeft, collision_enable = True, mass = 100000)
+    # env.add(shaftCenter, collision_enable = True, mass = 100000)
     env.add(shaftCenter, collision_enable = True, mass = 100000)
     env.add(shaftRight, collision_enable = True, mass = 100000)
     env.add(rails, collision_enable = False)

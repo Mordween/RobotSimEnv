@@ -347,7 +347,8 @@ function init()
             // let [shaft, shaftNum] = getElementByName(this.scene.children, 'shaft3');
 			// let [shaft, shaftNum] = getElementByName(this.scene.children, 'Cube');
 			// let shaft = this.pulley[0]
-			let [shaft, shaftNum] = getElementByName(this.scene.children, 'Cylinder001');
+			// let [shaft, shaftNum] = getElementByName(this.scene.children, 'shaftCenter');
+			let [shaft, shaftNum] = getElementByName(this.scene.children, 'shaftCenterC');
 
 			// rope parameters
 			const ropePos =  new THREE.Vector3();
