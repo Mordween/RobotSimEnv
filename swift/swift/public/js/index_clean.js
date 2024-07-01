@@ -38,8 +38,8 @@ let framerate = 20;
 let autoclose = true;
 
 let shaftHeight = 0.3785
-// let shaftRad = 0.25 	
-let shaftRad = 0.01		// for the cube		
+let shaftRad = 0.25 	
+// let shaftRad = 0.01		// for the cube		
 let pulleyRadMin = 150
 let pulleyRadMax = 200
 let pulleyHeightMax = 500
@@ -345,8 +345,9 @@ function init()
 
 			let [bricks, bricksNum] = getElementByName(this.scene.children, 'brick');
             // let [shaft, shaftNum] = getElementByName(this.scene.children, 'shaft3');
-			let [shaft, shaftNum] = getElementByName(this.scene.children, 'Cube');
+			// let [shaft, shaftNum] = getElementByName(this.scene.children, 'Cube');
 			// let shaft = this.pulley[0]
+			let [shaft, shaftNum] = getElementByName(this.scene.children, 'Cylinder001');
 
 			// rope parameters
 			const ropePos =  new THREE.Vector3();
