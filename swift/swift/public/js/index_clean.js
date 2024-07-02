@@ -43,8 +43,8 @@ let shaftHeight = 0.3785
 let shaftRad = 0.01		// for the cube		
 let pulleyRadMin = 150
 let pulleyRadMax = 200
-let pulleyHeightMax = 500
-let pulleyHeightMin = 10
+let pulleyHeightMax = 50
+let pulleyHeightMin = 100
 let brickHeight = 0.3
 
 // Open the connection to python
@@ -323,17 +323,24 @@ function init()
 		createPulley(position, scale)
 		{
 			const pulleyData = [
-				{x: position[0], y: position[1], 													z: position[2], height: pulleyHeightMin*scale, radiusTop: pulleyRadMin*scale, radiusBottom: pulleyRadMin*scale},    
-				{x: position[0], y: position[1] + ((pulleyHeightMax + pulleyHeightMin)*scale)/2,	z: position[2], height: pulleyHeightMax*scale, radiusTop: pulleyRadMax*scale, radiusBottom: pulleyRadMax*scale},
-				{x: position[0], y: position[1] - ((pulleyHeightMax + pulleyHeightMin)*scale)/2,	z: position[2], height: pulleyHeightMax*scale, radiusTop: pulleyRadMax*scale, radiusBottom: pulleyRadMax*scale},
+				{x: position[0]													, y: position[1], 	z: position[2], height: pulleyHeightMin*scale, radiusTop: pulleyRadMin*scale, radiusBottom: pulleyRadMin*scale},    
+				{x: position[0] + ((pulleyHeightMax + pulleyHeightMin)*scale)/2 , y: position[1],	z: position[2], height: pulleyHeightMax*scale, radiusTop: pulleyRadMax*scale, radiusBottom: pulleyRadMax*scale},
+				{x: position[0] - ((pulleyHeightMax + pulleyHeightMin)*scale)/2	, y: position[1],	z: position[2], height: pulleyHeightMax*scale, radiusTop: pulleyRadMax*scale, radiusBottom: pulleyRadMax*scale},
 				]
 				let pos = 0
 				this.pulley = pulleyData.map(d => {
 					let cylinder = this.add.cylinder(d) 
+					cylinder.rotation.z = Math.PI/2
 					this.physics.add.existing(cylinder, { shape: 'convex', collisionFlags :(pos === 0?2:2), mass: 100000 })
 					pos = 1
 					return cylinder
-				})
+				});
+				// this.pulley[0].rotation.z = Math.PI/2;
+				// this.pulley[0].body.needUpdate = True;
+				// this.pulley[1].rotation.z = Math.PI/2;
+				// this.pulley[1].body.needUpdate = True;
+				// this.pulley[2].rotation.z = Math.PI/2;
+				// this.pulley[2].body.needUpdate = True;
 
 		}
 		createRope()
@@ -373,7 +380,7 @@ function init()
 
 
 			const ropeGeometry = new THREE.PlaneGeometry(ropeWidth, ropeLength, ropeNumSegmentsY, ropeNumSegmentsZ)
-			const ropeMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff, side: THREE.DoubleSide })
+			const ropeMaterial = new THREE.MeshLambertMaterial({ color: 0x000000, side: THREE.DoubleSide })
 
 			this.rope = new THREE.Mesh(ropeGeometry, ropeMaterial)
 
@@ -403,7 +410,7 @@ function init()
 
 			this.ropeSoftBody.setTotalMass(1, false)                  
 			// @ts-ignore
-			Ammo.castObject(this.ropeSoftBody, Ammo.btCollisionObject).getCollisionShape().setMargin(0.01) 
+			Ammo.castObject(this.ropeSoftBody, Ammo.btCollisionObject).getCollisionShape().setMargin(0.04) 
 			this.physics.physicsWorld.addSoftBody(this.ropeSoftBody, 1, -1)
 
 			this.rope.userData.physicsBody = this.ropeSoftBody

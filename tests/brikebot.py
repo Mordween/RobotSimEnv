@@ -95,6 +95,7 @@ def crane_move_to(T_dest, n_sample, shaftCenterD = 0.32):
 def crane_pick_and_place(T_pick, T_place_up, T_place, n_sample):
     crane_move_to(T_pick, n_sample, 0.27)
     time.sleep(1)
+    env._send_socket("shaft", ['add', [2, 3-0.27, 3.785], 0.001])
     env._send_socket("rope", 'add')
     time.sleep(5)  
     # for i in range(n_sample):
@@ -112,7 +113,12 @@ def crane_pick_and_place(T_pick, T_place_up, T_place, n_sample):
     for i in range(int((SE3(T_place_up).z-SE3(brick.T).z)*100)):
         cube.T = SE3(SE3(cube.T).x, SE3(cube.T).y, SE3(cube.T).z + (1/100))
         env.step()
-    time.sleep(10)
+
+
+    for i in range (1000):
+        cube.T = SE3(SE3(cube.T).x, SE3(cube.T).y-(1/1000), SE3(cube.T).z)
+        env.step()
+    time.sleep(100)
     crane_move_to(T_place_up, n_sample, 0.2)    # 0.25 for cone
 
     # robot_move_to(lite6, env, 1/f, T_place_up*SE3.RPY([0, 0, -90], order='xyz', unit='deg'), gain=2, treshold=0.001, qd_max=1)
@@ -215,10 +221,12 @@ if __name__ == "__main__":  # pragma nocover
     env.add(brick, collision_enable = True, collisionFlags = 0, mass = 0.5)
     # env.add(end_effector, collision_enable = False)
     # env.add(shaft, collision_enable = True, mass = 100000)
-    env.add(shaftLeft, collision_enable = True, mass = 100)
-    # env.add(shaftCenter, collision_enable = True, mass = 100000)
-    env.add(shaftCenter, collision_enable = True, mass = 100)
-    env.add(shaftRight, collision_enable = True, mass = 100)
+
+    # env.add(shaftLeft, collision_enable = True, mass = 100)
+    # # env.add(shaftCenter, collision_enable = True, mass = 100000)
+    # env.add(shaftCenter, collision_enable = True, mass = 100)
+    # env.add(shaftRight, collision_enable = True, mass = 100)
+
     env.add(rails, collision_enable = False)
     # env.add(lite6, collision_enable = False)
     env.add(cube, collision_enable = True) 
