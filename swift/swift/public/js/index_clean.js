@@ -227,7 +227,23 @@ class WebSocketCom {
 			}
 
 			this.ws.send(0);
-		} 
+		}
+		else if (func === 'brickwall') 
+			{
+				if(data[0] === 'add')
+				{
+					let position = data[1];
+					let scale = data[2];
+					let collisionFlags = data[3]
+					scene.createWall(position, scale, collisionFlags);
+				}
+				else
+				{
+					console.log("This fonction is not implemented! ")
+				}
+	
+				this.ws.send(0);
+			} 
 	}
 }
 
@@ -335,12 +351,6 @@ function init()
 					pos = 1
 					return cylinder
 				});
-				// this.pulley[0].rotation.z = Math.PI/2;
-				// this.pulley[0].body.needUpdate = True;
-				// this.pulley[1].rotation.z = Math.PI/2;
-				// this.pulley[1].body.needUpdate = True;
-				// this.pulley[2].rotation.z = Math.PI/2;
-				// this.pulley[2].body.needUpdate = True;
 
 		}
 		createRope()
@@ -426,6 +436,40 @@ function init()
 		popRope()
 		{
 			this.ropeSoftBody.m_anchors.pop_back()
+		}
+
+		createWall(position, scale, collisionFlags)
+		{
+
+	// 		# for i in range(4):
+    // 		#     for j in range(3):
+	// 		#         if not (i==3 and j==0):
+	// 		#             b = copy.copy(brickWall)
+	// 		#             b.T = SE3(0, 0.2 + 0.06*j, 0.16+0.03*i)
+	// 		#             env.add(b, collision_enable = False, collisionFlags = 2)
+
+			this.brickWall = []
+			for(let i = 0; i < 4; i++)
+			{
+				for(let j = 0; j < 3; j++)
+				{
+					if(!( i == 3 && j == 0))
+					{
+						this.brickWall[i*3+j] = this.physics.add.box({
+							mass: 10,
+							x: position[0],
+							y: position[1] + 60*scale*j,
+							z: position[2] + 30*scale*i,
+							height: 60*scale,
+							width: 40*scale,
+							depth: 30*scale,
+							collisionFlags: collisionFlags,
+							})
+						this.brickWall[i*3+j].body.setFriction(1)
+					}
+				}
+			}
+
 		}
 
 
