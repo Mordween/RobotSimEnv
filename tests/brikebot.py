@@ -93,11 +93,10 @@ def crane_move_to(T_dest, n_sample, shaftCenterD = 0.32):
 
 
 def crane_pick_and_place(T_pick, T_place_up, T_place, n_sample):
-    crane_move_to(T_pick, n_sample)
+    crane_move_to(T_pick, n_sample, 0.27)
     time.sleep(1)
     env._send_socket("rope", 'add')
-    print(brick.T)
-    time.sleep(10)
+    time.sleep(5)  
     # for i in range(n_sample):
     #     twist = Twist3.UnitRevolute([1 ,0, 0],[SE3(shaftCenter.T).x, SE3(shaftCenter.T).y, SE3(shaftCenter.T).z], 0)
     #     shaftLeft.T = twist.SE3((i/(1000*n_sample))/shaft_radius)*shaftCenter.T
@@ -110,12 +109,11 @@ def crane_pick_and_place(T_pick, T_place_up, T_place, n_sample):
         cube.T = SE3(SE3(cube.T).x, SE3(cube.T).y-(1/1000), SE3(cube.T).z)
         env.step()
 
-    for i in range(n_sample):
-        cube.T = SE3(SE3(cube.T).x, SE3(cube.T).y, SE3(cube.T).z + (1/130))
+    for i in range(int((SE3(T_place_up).z-SE3(brick.T).z)*100)):
+        cube.T = SE3(SE3(cube.T).x, SE3(cube.T).y, SE3(cube.T).z + (1/100))
         env.step()
-    
     time.sleep(10)
-    crane_move_to(T_place_up, n_sample, 0.25)
+    crane_move_to(T_place_up, n_sample, 0.2)    # 0.25 for cone
 
     # robot_move_to(lite6, env, 1/f, T_place_up*SE3.RPY([0, 0, -90], order='xyz', unit='deg'), gain=2, treshold=0.001, qd_max=1)
     # robot_move_to(lite6, env, 1/f, T_place*SE3.RPY([0, 0, -90], order='xyz', unit='deg'), gain=2, treshold=0.001, qd_max=1, move_brick=True)
@@ -156,16 +154,16 @@ if __name__ == "__main__":  # pragma nocover
         color=[31, 184, 72],
         scale=(0.01,) * 3,
     )
-    # shaftCenter = Mesh(
-    #     filename=("/home/fari/Documents/swiftRepare/tests/urdf-object/shaftPart/shaftCenter.glb"),
-    #     color=[31, 184, 72],
-    #     scale=(0.01,) * 3,
-    # )
     shaftCenter = Mesh(
-        filename=("/home/fari/Documents/swiftRepare/tests/urdf-object/shaftPart/shaftCenterC.glb"),
+        filename=("/home/fari/Documents/swiftRepare/tests/urdf-object/shaftPart/shaftCenter.glb"),
         color=[31, 184, 72],
         scale=(0.01,) * 3,
     )
+    # shaftCenter = Mesh(
+    #     filename=("/home/fari/Documents/swiftRepare/tests/urdf-object/shaftPart/shaftCenterC.glb"),
+    #     color=[31, 184, 72],
+    #     scale=(0.01,) * 3,
+    # )
     shaftRight = Mesh(
         filename=("/home/fari/Documents/swiftRepare/tests/urdf-object/shaftPart/shaftRight.glb"),
         color=[31, 184, 72],
@@ -193,7 +191,7 @@ if __name__ == "__main__":  # pragma nocover
     shaftCenter.T = SE3(0, 0, 3.785)
     shaftRight.T = SE3(0, 0, 3.785)
 
-    cube.T = SE3(0, 0+0.32, 3.785+0.5)
+    cube.T = SE3(0, 0+0.27, 3.785+0.5)
 
     # brickwall = []
     # for i in range(4):
@@ -232,10 +230,10 @@ if __name__ == "__main__":  # pragma nocover
     f=50
 
     # T_pick = SE3(brick.T)
-    T_pick = SE3(2, 3-0.32, 0.3)
+    T_pick = SE3(2, 3-0.27, 0.3)
     # T_place_up = SE3(0.0, 0.2, 0.1)
     # T_place = SE3(0, 0.2, 0.09)
-    T_place_up = SE3(0.0, 2, 1)
+    T_place_up = SE3(0.0, 2, 2)
     T_place = SE3(0, 2, 0.9)
     # print(dir(shaft))
     # print(type(shaft.T))
@@ -260,9 +258,6 @@ if __name__ == "__main__":  # pragma nocover
 
 
     crane_pick_and_place(T_pick, T_place_up, T_place, 400)
-    # print(shaft)
-    # print(dir(shaft))
-
 
     time.sleep(100)
     env.hold()

@@ -415,7 +415,6 @@ function init()
 			this.ropeSoftBody.appendAnchor(ropeNumSegmentsZ, this.scene.children[bricksNum].body.ammo, false, 1)
 
 
-
 		}
 		popRope()
 		{
