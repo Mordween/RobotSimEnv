@@ -302,6 +302,7 @@ function init()
 	class MainScene extends Scene3D {
 
 		async create() {
+			this.brickWallDone = false
 			
 			const { orbitControls } = await this.warpSpeed()
 
@@ -334,6 +335,15 @@ function init()
 
 		update(time) 
 		{	
+			if(this.brickWallDone === true)					// bricks continu to slide D: 
+			{
+				for(let i=0; i<12; i++)
+				{
+					this.brickWall[i].body.applyForceX(-  this.brickWall[i].body.velocity.x )
+					this.brickWall[i].body.applyForceY(-  this.brickWall[i].body.velocity.y )
+					this.brickWall[i].body.applyForceZ(-  this.brickWall[i].body.velocity.z )
+				}
+			}
 
         }
 		createPulley(position, scale)
@@ -447,6 +457,9 @@ function init()
 	// 		#             b = copy.copy(brickWall)
 	// 		#             b.T = SE3(0, 0.2 + 0.06*j, 0.16+0.03*i)
 	// 		#             env.add(b, collision_enable = False, collisionFlags = 2)
+			const quat = new THREE.Quaternion();
+
+			// this.rigidBodies = []
 
 			this.brickWall = []
 			for(let i = 0; i < 4; i++)
@@ -455,8 +468,18 @@ function init()
 				{
 					if(!( i == 3 && j == 0))
 					{
+						// let pos = new THREE.Vector3();
+						// pos.x = position[0]
+						// pos.y = position[1]
+						// pos.z = position[2]
+
+						// this.brickWall[i*3+j] = this.createParalellepiped(30*scale, 60*scale, 40*scale, 10, pos, quat, new THREE.MeshPhongMaterial( { color: 323232 } ))
+						// brick.castShadow = true;
+						// brick.receiveShadow = true;
+
+
 						this.brickWall[i*3+j] = this.physics.add.box({
-							mass: 10,
+							mass: 1000000000000000000,
 							x: position[0],
 							y: position[1] + 60*scale*j,
 							z: position[2] + 30*scale*i,
@@ -464,13 +487,75 @@ function init()
 							width: 40*scale,
 							depth: 30*scale,
 							collisionFlags: collisionFlags,
-							})
-						this.brickWall[i*3+j].body.setFriction(1)
+							},
+							{ 	
+							lambert: { color: 0x323232 } 
+						})	
+						this.brickWall[i*3+j].body.ammo.setActivationState(0)
+
+						this.brickWall[i*3+j].body.setFriction(0)
+						this.brickWall[i*3+j].body.ammo.setRollingFriction(1)
+						this.brickWall[i*3+j].body.setRestitution(0)
+						this.brickWall[i*3+j].body.setBounciness(0)
+						this.brickWall[i*3+j].body.setDamping(1, 1)
+
+						this.brickWall[i*3+j].castShadow = true;
+						this.brickWall[i*3+j].receiveShadow = true;
+
 					}
 				}
 			}
 
+			this.brickWallDone === true
+
 		}
+
+		createParalellepiped( sx, sy, sz, mass, pos, quat, material ) {
+
+			const threeObject = new THREE.Mesh( new THREE.BoxGeometry( sx, sy, sz, 1, 1, 1 ), material );
+			const shape = new Ammo.btBoxShape( new Ammo.btVector3( sx * 0.5, sy * 0.5, sz * 0.5 ) );
+			shape.setMargin( 0.05 );
+
+			this.createRigidBody( threeObject, shape, mass, pos, quat );
+
+			return threeObject;
+
+		}
+
+		createRigidBody( threeObject, physicsShape, mass, pos, quat ) {
+
+			threeObject.position.copy( pos );
+			threeObject.quaternion.copy( quat );
+
+			const transform = new Ammo.btTransform();
+			transform.setIdentity();
+			transform.setOrigin( new Ammo.btVector3( pos.x, pos.y, pos.z ) );
+			transform.setRotation( new Ammo.btQuaternion( quat.x, quat.y, quat.z, quat.w ) );
+			const motionState = new Ammo.btDefaultMotionState( transform );
+
+			const localInertia = new Ammo.btVector3( 0, 0, 0 );
+			physicsShape.calculateLocalInertia( mass, localInertia );
+
+			const rbInfo = new Ammo.btRigidBodyConstructionInfo( mass, motionState, physicsShape, localInertia );
+			const body = new Ammo.btRigidBody( rbInfo );
+
+			threeObject.userData.physicsBody = body;
+
+			this.scene.add( threeObject );
+
+			if ( mass > 0 ) {
+
+				this.rigidBodies.push( threeObject );
+
+				// Disable deactivation
+				body.setActivationState( 4 );
+
+			}
+
+			this.physics.addExisting( body );
+
+		}
+
 
 
 	}

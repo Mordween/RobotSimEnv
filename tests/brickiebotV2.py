@@ -193,7 +193,9 @@ if __name__ == "__main__":  # pragma nocover
     brick.T = SE3(2, 3, 0.16)
     env.add(brick, collision_enable = True, collisionFlags = 0, mass = 0.5)
 
-    env._send_socket("brickwall", ["add", [0, 0.2, 0.16], 0.01, 2])
+    env._send_socket("brickwall", ["add", [0, 0.2, 0.16], 0.01, 0])
+
+    time.sleep(10000)
 
     # for i in range(4):
     #     for j in range(3):
