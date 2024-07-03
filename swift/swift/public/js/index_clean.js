@@ -337,11 +337,34 @@ function init()
 		{	
 			if(this.brickWallDone === true)					// bricks continu to slide D: 
 			{
-				for(let i=0; i<12; i++)
+				for(let i=0; i<11; i++)
 				{
-					this.brickWall[i].body.applyForceX(-  this.brickWall[i].body.velocity.x )
-					this.brickWall[i].body.applyForceY(-  this.brickWall[i].body.velocity.y )
-					this.brickWall[i].body.applyForceZ(-  this.brickWall[i].body.velocity.z )
+					if( i == 9)
+					{
+						// this.brickWall[i].body.applyForceX(100000)
+						// this.brickWall[i].body.setVelocityX(1)
+						// console.log(this.brickWall[i].body.velocity)
+					}
+					else if(i == 12)
+					{
+						// this.brickWall[i].body.setVelocityX(1)
+						// console.log(this.brickWall[i].body.velocity)
+						this.brickWall[i].body.applyForceX(100000)
+						this.brickWall[i].body.needUpdate = true
+					}
+					else
+					{
+						this.brickWall[i].body.applyForceX(-  this.brickWall[i].body.velocity.x )
+						this.brickWall[i].body.applyForceY(-  this.brickWall[i].body.velocity.y )
+						this.brickWall[i].body.applyForceZ(-  this.brickWall[i].body.velocity.z )
+
+						// this.brickWall[i].body.setVelocityX(0)
+						// this.brickWall[i].body.setVelocityY(0)
+						// this.brickWall[i].body.setVelocityZ(0)
+
+						this.brickWall[i].body.needUpdate = true
+					}
+
 				}
 			}
 
@@ -479,7 +502,7 @@ function init()
 
 
 						this.brickWall[i*3+j] = this.physics.add.box({
-							mass: 1000000000000000000,
+							mass: 1000,
 							x: position[0],
 							y: position[1] + 60*scale*j,
 							z: position[2] + 30*scale*i,
@@ -506,7 +529,7 @@ function init()
 				}
 			}
 
-			this.brickWallDone === true
+			this.brickWallDone = true
 
 		}
 
