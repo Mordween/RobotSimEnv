@@ -115,12 +115,12 @@ def crane_pick_and_place(T_pick, T_place_up, T_place, n_sample):
         env.step()
 
 
-    time.sleep(20)
+    time.sleep(30)
     crane_move_to(T_place_up, n_sample, 0.25)   
 
-    # robot_move_to(lite6, env, 1/f, T_place_up*SE3.RPY([0, 0, -90], order='xyz', unit='deg'), gain=2, treshold=0.001, qd_max=1)
-    # robot_move_to(lite6, env, 1/f, T_place*SE3.RPY([0, 0, -90], order='xyz', unit='deg'), gain=2, treshold=0.001, qd_max=1, move_brick=True)
-    # robot_move_to(lite6, env, 1/f, lite6.qz, gain=2, treshold=0.001, qd_max=1)
+    robot_move_to(lite6, env, 1/f, T_place_up*SE3.RPY([0, 0, -90], order='xyz', unit='deg'), gain=2, treshold=0.001, qd_max=1)
+    robot_move_to(lite6, env, 1/f, T_place*SE3.RPY([0, 0, -90], order='xyz', unit='deg'), gain=2, treshold=0.001, qd_max=1, move_brick=True)
+    robot_move_to(lite6, env, 1/f, lite6.qz, gain=2, treshold=0.001, qd_max=1)
 
 
 
@@ -191,17 +191,17 @@ if __name__ == "__main__":  # pragma nocover
     cube.T = SE3(0, 0+0.32, 3.785+0.5)
 
     brick.T = SE3(2, 3, 0.16)
-    # env.add(brick, collision_enable = True, collisionFlags = 0, mass = 0.5)
+    env.add(brick, collision_enable = True, collisionFlags = 0, mass = 0.5)
     env._send_socket("brickwall", ["add", [0, 0.2, 0.16], 0.01, 2])
 
-    time.sleep(1)
-    brick.T = SE3(0, 0.2, 1.5)
-    env.add(brick, collision_enable = True, collisionFlags = 0, mass = 0.5)
+    # time.sleep(1)
+    # brick.T = SE3(0, 0.2, 1.5)
+    # env.add(brick, collision_enable = True, collisionFlags = 0, mass = 0.5)
 
     # time.sleep(100)
     # env._send_socket("brickwall", ["collisionFlag", 0])
 
-    time.sleep(10000)
+    # time.sleep(10000)
 
     # for i in range(4):
     #     for j in range(3):
@@ -214,7 +214,7 @@ if __name__ == "__main__":  # pragma nocover
     # brick.T = SE3(0.2, 0.3, 0.03)
 
     lite6 = rtb.models.Lite6()
-    lite6.base = SE3(0.4, 0, 0.0)*SE3.Rz(pi/2)
+    lite6.base = SE3(4, 0, 0.0)*SE3.Rz(pi/2)
     print(dir(lite6))
 
     env.add(crane, collision_enable = False)
@@ -224,7 +224,7 @@ if __name__ == "__main__":  # pragma nocover
     env.add(shaftRight, collision_enable = True, mass = 100)
 
     env.add(rails, collision_enable = False)
-    # env.add(lite6, collision_enable = False)
+    env.add(lite6, collision_enable = False)
     env.add(cube, collision_enable = True) 
 
     time.sleep(5)
