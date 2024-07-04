@@ -191,9 +191,15 @@ if __name__ == "__main__":  # pragma nocover
     cube.T = SE3(0, 0+0.32, 3.785+0.5)
 
     brick.T = SE3(2, 3, 0.16)
+    # env.add(brick, collision_enable = True, collisionFlags = 0, mass = 0.5)
+    env._send_socket("brickwall", ["add", [0, 0.2, 0.16], 0.01, 2])
+
+    time.sleep(1)
+    brick.T = SE3(0, 0.2, 1.5)
     env.add(brick, collision_enable = True, collisionFlags = 0, mass = 0.5)
 
-    env._send_socket("brickwall", ["add", [0, 0.2, 0.16], 0.01, 0])
+    # time.sleep(100)
+    # env._send_socket("brickwall", ["collisionFlag", 0])
 
     time.sleep(10000)
 

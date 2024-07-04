@@ -236,6 +236,12 @@ class WebSocketCom {
 					let scale = data[2];
 					let collisionFlags = data[3]
 					scene.createWall(position, scale, collisionFlags);
+					console.log("brickwall done")
+				}
+				else if(data[0] === 'collisionFlag')
+				{
+					let collisionFlags = data[1];
+					scene.collisionFlagsSet(collisionFlags)
 				}
 				else
 				{
@@ -335,38 +341,38 @@ function init()
 
 		update(time) 
 		{	
-			if(this.brickWallDone === true)					// bricks continu to slide D: 
-			{
-				for(let i=0; i<11; i++)
-				{
-					if( i == 9)
-					{
-						// this.brickWall[i].body.applyForceX(100000)
-						// this.brickWall[i].body.setVelocityX(1)
-						// console.log(this.brickWall[i].body.velocity)
-					}
-					else if(i == 12)
-					{
-						// this.brickWall[i].body.setVelocityX(1)
-						// console.log(this.brickWall[i].body.velocity)
-						this.brickWall[i].body.applyForceX(100000)
-						this.brickWall[i].body.needUpdate = true
-					}
-					else
-					{
-						this.brickWall[i].body.applyForceX(-  this.brickWall[i].body.velocity.x )
-						this.brickWall[i].body.applyForceY(-  this.brickWall[i].body.velocity.y )
-						this.brickWall[i].body.applyForceZ(-  this.brickWall[i].body.velocity.z )
+			// if(this.brickWallDone === true)					// bricks continu to slide D: 
+			// {
+			// 	for(let i=0; i<11; i++)
+			// 	{
+			// 		if( i == 9)
+			// 		{
+			// 			// this.brickWall[i].body.applyForceX(100000)
+			// 			// this.brickWall[i].body.setVelocityX(1)
+			// 			// console.log(this.brickWall[i].body.velocity)
+			// 		}
+			// 		else if(i == 12)
+			// 		{
+			// 			// this.brickWall[i].body.setVelocityX(1)
+			// 			// console.log(this.brickWall[i].body.velocity)
+			// 			this.brickWall[i].body.applyForceX(100000)
+			// 			this.brickWall[i].body.needUpdate = true
+			// 		}
+			// 		else
+			// 		{
+			// 			this.brickWall[i].body.applyForceX(-  this.brickWall[i].body.velocity.x )
+			// 			this.brickWall[i].body.applyForceY(-  this.brickWall[i].body.velocity.y )
+			// 			this.brickWall[i].body.applyForceZ(-  this.brickWall[i].body.velocity.z )
 
-						// this.brickWall[i].body.setVelocityX(0)
-						// this.brickWall[i].body.setVelocityY(0)
-						// this.brickWall[i].body.setVelocityZ(0)
+			// 			// this.brickWall[i].body.setVelocityX(0)
+			// 			// this.brickWall[i].body.setVelocityY(0)
+			// 			// this.brickWall[i].body.setVelocityZ(0)
 
-						this.brickWall[i].body.needUpdate = true
-					}
+			// 			this.brickWall[i].body.needUpdate = true
+			// 		}
 
-				}
-			}
+			// 	}
+			// }
 
         }
 		createPulley(position, scale)
@@ -499,9 +505,17 @@ function init()
 						// this.brickWall[i*3+j] = this.createParalellepiped(30*scale, 60*scale, 40*scale, 10, pos, quat, new THREE.MeshPhongMaterial( { color: 323232 } ))
 						// brick.castShadow = true;
 						// brick.receiveShadow = true;
-
+						// if( i === 0)
+						// {
+						// 	collisionFlags = 2	
+						// }
+						// else
+						// {
+						// 	collisionFlags = 0
+						// }
 
 						this.brickWall[i*3+j] = this.physics.add.box({
+						// this.brickWall[i*3+j] = this.factories.addBox({
 							mass: 1000,
 							x: position[0],
 							y: position[1] + 60*scale*j,
@@ -514,10 +528,10 @@ function init()
 							{ 	
 							lambert: { color: 0x323232 } 
 						})	
-						this.brickWall[i*3+j].body.ammo.setActivationState(0)
+						this.brickWall[i*3+j].body.ammo.setActivationState(3)
+						this.brickWall[i*3+j].body.ammo.activate()
 
-						this.brickWall[i*3+j].body.setFriction(0)
-						this.brickWall[i*3+j].body.ammo.setRollingFriction(1)
+						this.brickWall[i*3+j].body.setFriction(1)
 						this.brickWall[i*3+j].body.setRestitution(0)
 						this.brickWall[i*3+j].body.setBounciness(0)
 						this.brickWall[i*3+j].body.setDamping(1, 1)
@@ -529,8 +543,22 @@ function init()
 				}
 			}
 
-			this.brickWallDone = true
+			// this.brickWall[4].body.ammo.setCollisionFlags(0) 	// that works !!
 
+			this.brickWallDone = true
+		}
+		collisionFlagsSet(collisionFlags)
+		{
+			for(let i = 0; i < 4; i++)
+			{
+				for(let j = 0; j < 3; j++)
+				{
+					if(!( i == 3 && j == 0))
+					{
+						this.brickWall[i*3+j].body.ammo.setCollisionFlags(collisionFlags)
+					}
+				}
+			}
 		}
 
 		createParalellepiped( sx, sy, sz, mass, pos, quat, material ) {
