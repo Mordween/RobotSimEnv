@@ -7,16 +7,16 @@ from spatialmath import SE3
 
 class mycobot280(Robot):
     """
-    Class that imports a Panda URDF model
+    Class that imports a mycobot_280_pi URDF model
 
-    ``Panda()`` is a class which imports a Franka-Emika Panda robot definition
+    ``mycobot280()`` is a class which imports a mycobot_280_pi robot definition
     from a URDF file.  The model describes its kinematic and graphical
     characteristics.
 
     .. runblock:: pycon
 
         >>> import roboticstoolbox as rtb
-        >>> robot = rtb.models.URDF.Lite6()
+        >>> robot = rtb.models.URDF.mycobot280()
         >>> print(robot)
 
     Defined joint configurations are:
@@ -26,8 +26,6 @@ class mycobot280(Robot):
     - qs, arm is stretched out in the x-direction
     - qn, arm is at a nominal non-singular configuration
 
-    .. codeauthor:: Jesse Haviland
-    .. sectionauthor:: Peter Corke
     """
 
     def __init__(self):
@@ -48,10 +46,10 @@ class mycobot280(Robot):
         self.grippers[0].tool = SE3(0, 0, 0)
 
         self.qdlim = np.array(
-            [2*np.pi, 2.61799, 5.235988, 2*np.pi, 2.1642, 2.0*np.pi]
+            [np.pi, np.pi, np.pi, np.pi, np.pi, np.pi]
         )
 
-        self.qr = np.array([0, -0.3, 0, -2.2, 0, 2.0])
+        self.qr = np.array([-0.3, 0, -2.2, 0, 2.0, 0])
         self.qz = np.zeros(6)
 
         self.addconfiguration("qr", self.qr)
