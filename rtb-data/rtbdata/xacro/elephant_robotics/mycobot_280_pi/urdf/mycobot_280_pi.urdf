@@ -4,7 +4,7 @@
 <xacro:property name="width" value=".2" />
 
 
-  <link name="g_base">
+  <!-- <link name="g_base">
     <visual>
       <geometry>
         <mesh filename="package://elephant_robotics/mycobot_280_pi/meshes/visual/G_base.dae"/>
@@ -17,7 +17,7 @@
       </geometry>
       <origin xyz = "0.0 0 -0.03" rpy = "0 0 1.5708"/>
     </collision>
-  </link>
+  </link> -->
 
   <link name="joint1">
     <visual>
@@ -143,13 +143,13 @@
   </link>
 
 
-  <joint name="g_base_to_joint1" type="revolute">
-    <axis xyz="0 0 1"/>
+  <!-- <joint name="g_base_to_joint1" type="fixed">
+    <axis xyz="0 0 0"/>
     <limit effort = "1000.0" lower = "-3.14" upper = "3.14159" velocity = "0"/>
     <parent link="g_base"/>
     <child link="joint1"/>
     <origin xyz= "0 0 0" rpy = "0 0 0"/>  
-  </joint>
+  </joint> -->
 
 
   <joint name="joint2_to_joint1" type="revolute">
@@ -205,6 +205,32 @@
   </joint>
 
 
+
+  <link name="link_eef">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+       <mass value="1.0"/>
+       <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+				<mesh filename="cube.obj" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+				<mesh filename="cube.obj" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="joint_eef" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <parent link="joint6_flange"/>
+    <child link="link_eef"/>
+  </joint>
+<!-- Rajout du end effector + rajout du joint fixed pour le end effector -->
 
 </robot>
 
