@@ -75,6 +75,8 @@ def robot_move_to(robot, simulation, dt, dest, gain=2, treshold=0.001, qd_max=1,
 
 
 def crane_move_to(T_dest, n_sample, shaftCenterD = 0.32):
+    print("t dest", T_dest)
+    print("end effector position", end_effector.T)
     traj = rtb.ctraj(SE3(end_effector.T), T_dest, n_sample)
     
     for i in range(n_sample ):
@@ -239,6 +241,16 @@ if __name__ == "__main__":  # pragma nocover
     # T_place = SE3(0, 0.2, 0.09)
     T_place_up = SE3(0.0, 2, 2)
     T_place = SE3(0, 2, 0.9)
+
+
+
+    T_place_up = SE3(0.0, 0.2, 0.2)
+    print("dest : ", T_place_up*SE3.RPY([0, 0, -90], order='xyz', unit='deg'))
+
+    # robot_move_to(lite6, env, 1/f, T_place_up*SE3.RPY([0, 0, -90], order='xyz', unit='deg'), gain=2, treshold=0.001, qd_max=1)
+
+    # time.sleep(100)
+    
     # print(dir(shaft))
     # print(type(shaft.T))
     # for i in range(200):

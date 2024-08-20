@@ -8,14 +8,14 @@ let fps = new FPS(document.getElementById('fps'));
 let sim_time = new SimTime(document.getElementById('sim-time'));
 
 
-// const viewer = new GaussianSplats3D.Viewer({
-// 	'cameraUp': [0.01933, -0.75830, -0.65161],
-// 	'initialCameraPosition': [1.54163, 2.68515, -6.37228],
-// 	'initialCameraLookAt': [0.45622, 1.95338, 1.51278],
-// 	'sphericalHarmonicsDegree': 2,
-// 	'sharedMemoryForWorkers' : false, 
-// });
-// let path = './js/splats/point_cloud.ply';
+const viewer = new GaussianSplats3D.Viewer({
+	'cameraUp': [0.01933, -0.75830, -0.65161],
+	'initialCameraPosition': [1.54163, 2.68515, -6.37228],
+	'initialCameraLookAt': [0.45622, 1.95338, 1.51278],
+	'sphericalHarmonicsDegree': 2,
+	'sharedMemoryForWorkers' : false, 
+});
+let path = './js/splats/point_cloud.ply';
 
 // let path = './js/splats/bonsai.ksplat';
 
@@ -326,14 +326,15 @@ function init()
 			axesHelper.setColors(new THREE.Color(255, 0, 0), new THREE.Color(0, 255, 0), new THREE.Color(0, 0, 255))    // in order to know which axis is the right axis
 			this.scene.add( axesHelper );
 
-			// viewer.addSplatScene(path, {
-			// 	'streamView': true
-			// })
-			// .then(() => {
-			// 	// viewer.start();
-			// 	console.log("this scene", this)
-			// 	// this.add(viewer);
-			// });
+			viewer.addSplatScene(path, {
+				'streamView': true
+			})
+			.then(() => {
+				viewer.start();
+				console.log("this scene", this)
+				this.add(viewer);
+			});
+			
 
 			scene = this
 		}
