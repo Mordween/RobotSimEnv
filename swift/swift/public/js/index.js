@@ -1,27 +1,32 @@
-// import {OrbitControls} from '/js/vendor/examples/jsm/controls/OrbitControls.js'
-import {Compound, Shape, FPS, SimTime, Slider, Button, Label, Select, Checkbox, Radio} from './lib.js'
-// import { STLLoader } from './vendor/examples/jsm/loaders/STLLoader.js'
-// import { start } from 'repl';
+
+import {Compound, FPS, SimTime, Slider, Button, Label, Select, Checkbox, Radio} from './lib.js'
 import * as GaussianSplats3D from '@mkkellogg/gaussian-splats-3d';
 
 let fps = new FPS(document.getElementById('fps'));
 let sim_time = new SimTime(document.getElementById('sim-time'));
 
-
-// const viewer = new GaussianSplats3D.Viewer({
-// 	'cameraUp': [0.01933, -0.75830, -0.65161],
-// 	'initialCameraPosition': [1.54163, 2.68515, -6.37228],
-// 	'initialCameraLookAt': [0.45622, 1.95338, 1.51278],
-// 	'sphericalHarmonicsDegree': 2,
-// 	'sharedMemoryForWorkers' : false, 
-// });
-// let path = './js/splats/point_cloud.ply';
-
-// let path = './js/splats/bonsai.ksplat';
+let splat = false
 
 
+// Viewer for gaussian splatting
+if(splat === true)
+{
+		const viewer = new GaussianSplats3D.Viewer({
+		'cameraUp': [0.01933, -0.75830, -0.65161],
+		'initialCameraPosition': [1.54163, 2.68515, -6.37228],
+		'initialCameraLookAt': [0.45622, 1.95338, 1.51278],
+		'sphericalHarmonicsDegree': 2,
+		'sharedMemoryForWorkers' : false, 
+	});
+	let path = './js/splats/point_cloud.ply';
+	// let path = './js/splats/bonsai.ksplat';
+}
 
-let camera, scene, renderer, controls;
+function getElementByName(array, name) {
+    return [array.find(element => element.name === name), array.findIndex(element => element.name === name)];
+}
+
+let scene, renderer;
 
 // Array of all the robots in the scene
 let agents = [];
@@ -35,9 +40,22 @@ let recording = false;
 let framerate = 20;
 let autoclose = true;
 
-// Open the connection to python
-//let port = parseInt(window.location.pathname.slice(1));
 
+// because the cube is being pulled, this represents the height at which the cube stands from the shaft
+let shaftRad = 0.01	
+// minimum pulley wheel radius
+let pulleyRadMin = 150
+// maximum pulley wheel radius
+let pulleyRadMax = 200
+
+// wheel thickness
+let pulleyHeightMax = 50
+let pulleyHeightMin = 100
+
+let brickHeight = 0.3
+
+
+// the class that allows communication between the Python script and the JavaScript code
 class WebSocketCom {
 	constructor(port) {
 		this.port = port;
@@ -75,18 +93,30 @@ class WebSocketCom {
 		}
 	}
 
+	
+	/*
+	 * when the _send_socket() function is used in python
+	 * _send_socket("<func>", [<data[0]>, <data[1]>, ...])
+	 */
 	onMessage(event) {
 		console.log(event.data);
 		let eventdata = JSON.parse(event.data);
 		let func = eventdata[0];
 		let data = eventdata[1];
 		console.log("data", data)
+		try {
+			console.log("scene", scene)
+		  } catch (error) {
+			console.log("skipping step", error);
+		  }
 		if (func === 'shape') {
 			let compound = new Compound(scene);
 			// Assuming data is a list of shapes
 			let collision_enable = data[0];
-			for (let shapeData of data.slice(1)) {
-				compound.add_shape(shapeData, collision_enable);
+            let collisionFlags = data[1];
+			let mass = data[2];
+			for (let shapeData of data.slice(3)) {
+				compound.add_shape(shapeData, collision_enable, collisionFlags, mass);
 			}
 			
 			compound.id = compounds.length;
@@ -168,12 +198,72 @@ class WebSocketCom {
 
 			this.ws.send(0);
 		} 
+        else if (func === 'rope') 
+		{
+			if(data === 'add')
+			{
+				scene.createRope()
+			}
+			else if(data === 'pop')
+			{
+				scene.popRope()
+			}
+			else
+			{
+				console.log("This fonction is not implemented! ")
+			}
+			this.ws.send(0);
+		}
+		else if (func === 'shaft') 
+		{
+			if(data[0] === 'add')
+			{
+				let position = data[1];
+				let scale = data[2];
+				scene.createPulley(position, scale);
+			}
+			else if(data[0] === 'rotation')
+			{
+				let pulleyRotValue = data[1]
+				for (let i = 0; i < scene.pulley.length; i++) {
+					scene.pulley[i].rotation.y = pulleyRotValue;
+					scene.pulley[i].body.needUpdate = true
+				}
+			}
+			else
+			{
+				console.log("This fonction is not implemented! ")
+			}
+			this.ws.send(0);
+		}
+		else if (func === 'brickwall') 
+			{
+				if(data[0] === 'add')
+				{
+					let position = data[1];
+					let scale = data[2];
+					let collisionFlags = data[3]
+					scene.createWall(position, scale, collisionFlags);
+					console.log("brickwall done")
+				}
+				else if(data[0] === 'collisionFlag')
+				{
+					let collisionFlags = data[1];
+					scene.collisionFlagsSet(collisionFlags)
+				}
+				else
+				{
+					console.log("This fonction is not implemented! ")
+				}
+
+				this.ws.send(0);
+			} 
 	}
 }
 
 let webSocs = new WebSocketCom(53000);
 webSocs.Init();
- 
+
 
 function startSim(port) {
 	console.log("port", port)
@@ -182,13 +272,11 @@ function startSim(port) {
 }
 
 
-// function on_resize() {
-// 	camera.aspect = window.innerWidth / window.innerHeight;
-// 	camera.updateProjectionMatrix();
-// 	renderer.setSize(window.innerWidth, window.innerHeight);
-// }
 
 
+/*
+ * Never use this function
+ */
 function startRecording(frate, name, format) {
 	if (!recording) {
 
@@ -209,8 +297,6 @@ function startRecording(frate, name, format) {
 		recorder.start();
 	};
 }
-
-
 function stopRecording() {
 	recorder.stop();
 	recorder.save();
@@ -220,52 +306,16 @@ function stopRecording() {
 
 function init()
 {
-
-	
-	const { Project, Scene3D, PhysicsLoader, THREE, ExtendedObject3D } = ENABLE3D
-
-	let pulleyRotValue = 0;
-
-	let brickSpawn = false;
-	let armBrickCollision = false;
-	let leftArmCollision = false;
-	let rightArmCollision = false;
-
-	let armPos = 0.4
-
-	const pulleyPos =  new THREE.Vector3();
-	const ropePos =  new THREE.Vector3();
-
-	// The rope
-	const ropeWidth = 0.001
-	const ropeLength = 0.2
-	const ropeNumSegmentsZ = 1
-	const ropeNumSegmentsY = 50
-
-	// The pulley
-	const pulleyScale = 0.5
-	const pulleyRadius = 0.7*pulleyScale
-	const pulleyHeight = 0.3*pulleyScale
-
-
-	pulleyPos.set(0, 0, 8)
-	ropePos.set(pulleyPos.x, pulleyPos.y, pulleyPos.z-pulleyScale*pulleyRadius)
-
-	const ropeBodyUse = true;  
-	
-	let value = Math.PI/4
-
+	const { Project, Scene3D, PhysicsLoader, THREEje } = ENABLE3D
 
 	class MainScene extends Scene3D {
 
 		async create() {
+			this.brickWallDone = false
 			
 			const { orbitControls } = await this.warpSpeed()
-
-			// this.camera.position.set(0.5, -3, 0.5)
-			this.camera.position.set(0, -3, 0.5)
+			this.camera.position.set(1.2, 1.2, 0.5)
 			orbitControls?.target.set(0, 2.5, 0)
-			// this.camera.lookAt(0.5, 0, 0)
 			this.camera.lookAt(0, 0, 0)
 
 			// enable physics debugging
@@ -276,164 +326,71 @@ function init()
 			axesHelper.setColors(new THREE.Color(255, 0, 0), new THREE.Color(0, 255, 0), new THREE.Color(0, 0, 255))    // in order to know which axis is the right axis
 			this.scene.add( axesHelper );
 
-			// viewer.addSplatScene(path, {
-			// 	'streamView': true
-			// })
-			// .then(() => {
-			// 	// viewer.start();
-			// 	console.log("this scene", this)
-			// 	// this.add(viewer);
-			// });
-
-
-			const pulleyData = [
-			{x: 0, y: 0,                      				  z: 0, height: pulleyHeight  , radiusTop: pulleyRadius		, radiusBottom: pulleyRadius },    
-			{x: 0, y: (pulleyScale * 4 * pulleyHeight)/6,     z: 0, height: pulleyHeight/3, radiusTop: 1.25*pulleyRadius, radiusBottom: 1.25*pulleyRadius },
-			{x: 0, y: - (pulleyScale * 4 * pulleyHeight)/6,   z: 0, height: pulleyHeight/3, radiusTop: 1.25*pulleyRadius, radiusBottom: 1.25*pulleyRadius },
-			]
-			let pos = 0
-			this.pulley = pulleyData.map(d => {
-				let cylinder = this.add.cylinder(d) 
-				cylinder.position.x += pulleyPos.x;
-				cylinder.position.y += pulleyPos.y;
-				cylinder.position.z += pulleyPos.z;
-				this.physics.add.existing(cylinder, { shape: 'convex', collisionFlags :(pos === 0?2:2), mass: 100000 })
-				pos = 1
-				return cylinder
-			})
-
-
-			// const ropeGeometry = new THREE.PlaneGeometry(ropeWidth, ropeLength, ropeNumSegmentsZ, ropeNumSegmentsY)
-
-			// const ropeMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff, side: THREE.DoubleSide })
-			// this.rope = new THREE.Mesh(ropeGeometry, ropeMaterial)
-			// this.rope.castShadow = true
-			// this.rope.receiveShadow = true
-			// // this.scene.add(this.rope)
-
-			// // this.load.texture('/assets/img/grid.png').then(texture => {
-			// // texture.wrapS = THREE.RepeatWrapping
-			// // texture.wrapT = THREE.RepeatWrapping
-			// // texture.repeat.set(ropeNumSegmentsZ, ropeNumSegmentsY)
-			// // // @ts-ignore
-			// // this.rope.material.map = texture
-			// // // @ts-ignore
-			// // this.rope.material.needsUpdate = true
-			// // })
-
-			console.log("thisPhysics", this.physics.physicsWorld.getWorldInfo())
-			this.physics.physicsWorld.getWorldInfo().get_m_gravity().setX(0)
-			this.physics.physicsWorld.getWorldInfo().get_m_gravity().setY(0)
-			this.physics.physicsWorld.getWorldInfo().get_m_gravity().setZ(-9.81)      // FIX soft body Gravity
-			
-			console.log("thisPhysics", this.physics.physicsWorld.getWorldInfo())
-
-			// const softBodyHelpers = new Ammo.btSoftBodyHelpers()
-			// this.ropeSoftBody
-			
-			// if (ropeBodyUse === true)   /*********************************** CreateRope used *********************************/
-			// {
-			// const ropeStart = new Ammo.btVector3( ropePos.x, ropePos.y, ropePos.z );
-			// const ropeEnd = new Ammo.btVector3( ropePos.x, ropePos.y , ropePos.z - ropeLength );
-			// this.ropeSoftBody = softBodyHelpers.CreateRope( 
-			// this.physics.physicsWorld.getWorldInfo(), 
-			// ropeStart, 
-			// ropeEnd, 
-			// ropeNumSegmentsY - 1, 
-			// 0 
-			// );
-			// }
-			// else                      /*********************************** CreatePatch used *********************************/
-			// {
-			// const ropeCornerBR = new Ammo.btVector3(ropePos.x, ropePos.y + 0.5 * ropeWidth, ropePos.z - ropeLength)
-			// const ropeCornerBL = new Ammo.btVector3(ropePos.x, ropePos.y - 0.5 * ropeWidth, ropePos.z - ropeLength)
-			// const ropeCornerTR = new Ammo.btVector3(ropePos.x, ropePos.y + 0.5 * ropeWidth, ropePos.z)
-			// const ropeCornerTL = new Ammo.btVector3(ropePos.x, ropePos.y - 0.5 * ropeWidth, ropePos.z)
-
-			// this.ropeSoftBody = softBodyHelpers.CreatePatch(
-			// this.physics.physicsWorld.getWorldInfo(),
-			// ropeCornerBR,
-			// ropeCornerBL,
-			// ropeCornerTR,
-			// ropeCornerTL,
-			// ropeNumSegmentsZ + 1,
-			// ropeNumSegmentsY + 1,
-			// 0,
-			// true
-			// );
-			// }
-
-			// const sbConfig = this.ropeSoftBody.get_m_cfg()
-			// sbConfig.set_viterations(100)
-			// sbConfig.set_piterations(100)       // the rope is no longer elastic
-
-			// this.ropeSoftBody.setTotalMass(100, false)                  
-			// // @ts-ignore
-			// Ammo.castObject(this.ropeSoftBody, Ammo.btCollisionObject).getCollisionShape().setMargin(0.04) 
-			// this.physics.physicsWorld.addSoftBody(this.ropeSoftBody, 1, -1)
-
-			// console.log("this", this)
-
-			// this.rope.userData.physicsBody = this.ropeSoftBody
-			
-			// // Disable deactivation
-			// this.ropeSoftBody.setActivationState(4)
-
-			// Glue the rope to the pulley
-
-			this.createRope()
-
-			const influence = 1
-			if(ropeBodyUse == true) /*********************************** if CreateRope used *********************************/
+			if(splat===true)
 			{
-			this.ropeSoftBody.appendAnchor(0, this.pulley[0].body.ammo, false, influence)
+				viewer.addSplatScene(path, {
+				'streamView': true
+				})
+				.then(() => {
+					viewer.start();
+					console.log("this scene", this)
+					this.add(viewer);
+				});
 			}
-			else                    /*********************************** if CreatePatch used *********************************/
-			{
-			this.ropeSoftBody.appendAnchor(ropeNumSegmentsY*2, this.pulley[0].body.ammo, false, influence)
-			}
-
-			// this.ropeSoftBody.setFriction(1)
-			// this.ropeSoftBody.setRollingFriction(1)
-
-			// this.initInput()
-
-
-			// const armParams = {
-			// mass: 1,
-			// z: 2,
-			// height: 0.7,
-			// width: 0.1,
-			// depth: 0.4,
-			// collisionFlags: 2
-			// }
-			// const addArm = x => {
-			// const arm = this.physics.add.box({
-			// 	...armParams,
-			// 	x
-			// })
-			// arm.body.setFriction(1)
-			// arm.body.setDamping(0.5,0.5);
-			// return arm
-			// }
-			// this.leftArm = addArm(-0.3)
-			// this.rightArm = addArm(0.3)
-			// this.leftArm.name = "leftArm"
-			// this.rightArm.name = "rightArm"
-
-			// console.log("load glb file")
-			// this.loadGLBFile('./assets/base.glb', 'base', {x:1, y:0, z:0}, {x:Math.PI/2, y:0, z:0}, 2)
-
 			scene = this
+		}
+	
+
+		update(time) 
+		{	
+
+        }
+		createPulley(position, scale)
+		{
+			const pulleyData = [
+				{x: position[0]													, y: position[1], 	z: position[2], height: pulleyHeightMin*scale, radiusTop: pulleyRadMin*scale, radiusBottom: pulleyRadMin*scale},    
+				{x: position[0] + ((pulleyHeightMax + pulleyHeightMin)*scale)/2 , y: position[1],	z: position[2], height: pulleyHeightMax*scale, radiusTop: pulleyRadMax*scale, radiusBottom: pulleyRadMax*scale},
+				{x: position[0] - ((pulleyHeightMax + pulleyHeightMin)*scale)/2	, y: position[1],	z: position[2], height: pulleyHeightMax*scale, radiusTop: pulleyRadMax*scale, radiusBottom: pulleyRadMax*scale},
+				]
+				let pos = 0
+				this.pulley = pulleyData.map(d => {
+					let cylinder = this.add.cylinder(d) 
+					cylinder.rotation.z = Math.PI/2
+					this.physics.add.existing(cylinder, { shape: 'convex', collisionFlags :(pos === 0?2:2), mass: 100000 })
+					pos = 1
+					return cylinder
+				});
 
 		}
-
 		createRope()
 		{
 
+			this.physics.physicsWorld.getWorldInfo().get_m_gravity().setX(0)
+			this.physics.physicsWorld.getWorldInfo().get_m_gravity().setY(0)
+			this.physics.physicsWorld.getWorldInfo().get_m_gravity().setZ(-9.81)
+
+			let [bricks, bricksNum] = getElementByName(this.scene.children, 'brick');
+			let [shaft, shaftNum] = getElementByName(this.scene.children, 'Cube');
+			console.log(shaft)
+			console.log(bricks)
+
+			// rope parameters
+			const ropePos =  new THREE.Vector3();
+
+			ropePos.x = bricks.position.x
+			ropePos.y = bricks.position.y
+			ropePos.z = shaft.position.z - shaftRad
+
+			const ropeWidth = 0.01
+			const ropeLength = ropePos.z - bricks.position.z - brickHeight/2
+			
+			console.log("rope length", ropeLength)
+			const ropeNumSegmentsY = 1
+			const ropeNumSegmentsZ = 50
+
 
 			const ropeGeometry = new THREE.PlaneGeometry(ropeWidth, ropeLength, ropeNumSegmentsY, ropeNumSegmentsZ)
-			const ropeMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff, side: THREE.DoubleSide })
+			const ropeMaterial = new THREE.MeshLambertMaterial({ color: 0x000000, side: THREE.DoubleSide })
 
 			this.rope = new THREE.Mesh(ropeGeometry, ropeMaterial)
 
@@ -451,7 +408,7 @@ function init()
 				this.physics.physicsWorld.getWorldInfo(), 
 				ropeStart, 
 				ropeEnd, 
-				ropeNumSegmentsY - 1, 
+				ropeNumSegmentsZ - 1, 
 				0 
 			);
 
@@ -471,212 +428,117 @@ function init()
 			// Disable deactivation
 			this.ropeSoftBody.setActivationState(4)
 
+			this.ropeSoftBody.appendAnchor(0, this.scene.children[shaftNum].body.ammo, false, 1)
+			this.ropeSoftBody.appendAnchor(ropeNumSegmentsZ, this.scene.children[bricksNum].body.ammo, false, 1)
+
 
 		}
+
+		/* 
+		 *	pop the last anchor create on the rope
+		 */
+		popRope()
+		{
+			this.ropeSoftBody.m_anchors.pop_back()
+		}
+
+		createWall(position, scale, collisionFlags)
+		{
+			this.brickWall = []
+			for(let i = 0; i < 4; i++)
+			{
+				for(let j = 0; j < 3; j++)
+				{
+					if(!( i == 3 && j == 0))
+					{
 	
+						this.brickWall[i*3+j] = this.physics.add.box({
+							mass: 1000,
+							x: position[0],
+							y: position[1] + 60*scale*j,
+							z: position[2] + 30*scale*i,
+							height: 60*scale,
+							width: 40*scale,
+							depth: 30*scale,
+							collisionFlags: collisionFlags,
+							},
+							{ 	
+							lambert: { color: 0x323232 } 
+						})	
+						this.brickWall[i*3+j].body.ammo.setActivationState(3)
+						this.brickWall[i*3+j].body.ammo.activate()
 
-		loadGLBFile(url, name, position = {x: number, y: number, z: number}, rotation = {x: number, y: number, z: number}, collisionFlags)
-		{
-			this.load.gltf(url).then(gltf => {
+						this.brickWall[i*3+j].body.setFriction(1)
+						this.brickWall[i*3+j].body.setRestitution(0)
+						this.brickWall[i*3+j].body.setBounciness(0)
+						this.brickWall[i*3+j].body.setDamping(1, 1)
 
-			let object = new ExtendedObject3D()
-			const mesh = gltf.scene.children[0]
+						this.brickWall[i*3+j].castShadow = true;
+						this.brickWall[i*3+j].receiveShadow = true;
 
-			object.position.set(position.x, position.y, position.z)
-			object.rotation.set(rotation.x, rotation.y, rotation.z)
-
-			
-			object.name = name;
-			this[name] = object
-
-			object.add(mesh)
-			this.add.mesh(this[name])
-
-			this.physics.add.existing(this[name], { collisionFlags: collisionFlags, shape: 'mesh', mass : 0})    // mass = 0 => kinematics mesh
-			this[name].body.setFriction(1)
-
-			});
-		}
-
-		update(time) 
-		{	
-
-			// for (let i = 0; i < this.pulley.length; i++) {
-			// 	this.pulley[i].rotation.y = pulleyRotValue;
-			// 	this.pulley[i].position.setX(pulleyPos.x); 
-			// 	this.pulley[i].position.setY(i === 0 ? pulleyPos.y : (i===1? pulleyPos.y + 4 * pulleyHeight/6:pulleyPos.y - 4 * pulleyHeight/6)); 
-			// 	this.pulley[i].position.setZ(pulleyPos.z);
-			// 	this.pulley[i].body.needUpdate = true
-			// }
-
-			// if (brickSpawn===true)
-			// { 
-			// this.leftArm.position.set(  this.brick.position.x,
-			// 							this.brick.position.y,
-			// 							this.brick.position.z 
-			// 							)
-			// this.leftArm.translateX(armPos)
-
-			// this.rightArm.position.set( this.brick.position.x,
-			// 							this.brick.position.y,
-			// 							this.brick.position.z 
-			// 							)
-			// this.rightArm.translateX(-armPos)
-
-			// this.leftArm.quaternion._w = this.brick.quaternion.w 
-			// this.leftArm.quaternion._x = this.brick.quaternion.x
-			// this.leftArm.quaternion._y = this.brick.quaternion.y
-			// this.leftArm.quaternion._z = this.brick.quaternion.z
-
-			// this.rightArm.quaternion._w = this.brick.quaternion.w 
-			// this.rightArm.quaternion._x = this.brick.quaternion.x
-			// this.rightArm.quaternion._y = this.brick.quaternion.y
-			// this.rightArm.quaternion._z = this.brick.quaternion.z
-
-			// this.leftArm.body.needUpdate = true
-			// this.rightArm.body.needUpdate = true                      
-
-			// // /*** Friction with air ***/ 
-			// this.brick.body.applyForceX(- 0.05* this.brick.body.velocity.x * 1 * this.physics.physicsWorld.getWorldInfo().air_density )
-			// this.brick.body.applyForceY(- 0.05* this.brick.body.velocity.y * 1 * this.physics.physicsWorld.getWorldInfo().air_density )
-			// this.brick.body.applyForceZ(- 0.05* this.brick.body.velocity.z * 1 * this.physics.physicsWorld.getWorldInfo().air_density )
-			// }
-			
-		}
-
-		addBrick = (position = {x: number, y: number, z: number}, rotation = {x: number, y: number, z: number}, scale, collisionFlags)=> {
-			const brick = this.physics.add.box({
-			mass: 10,
-			x: position.x,
-			y: position.y,
-			z: position.z,
-			height: 0.22*scale,
-			width: 0.105*scale,
-			depth: 0.06*scale,
-			collisionFlags: collisionFlags,
-			scale: scale,
-			})
-			brick.body.setFriction(1)
-			brick.body.setDamping(0.5,0.5);
-			return brick
-		}
-
-		initInput()
-		{
-			window.addEventListener(
-			"keydown",
-			(event) => {
-				switch (event.code) {
-				case "KeyS":
-				case "ArrowDown":
-					// Handle "back"
-					pulleyPos.y -= 0.01;
-					console.log(this)
-					break;
-				case "KeyW":
-				case "ArrowUp":
-					// Handle "forward"
-					pulleyPos.y += 0.01;
-					break;
-				case "KeyA":
-				case "ArrowLeft":
-					// Handle "turn left"
-					pulleyPos.x -= 0.01;
-					break;
-				case "KeyD":
-				case "ArrowRight":
-					// Handle "turn right"
-					pulleyPos.x += 0.01;
-					break;
-
-				case "Shift":
-				case "ShiftRight": 
-					// deleate last anchor
-					this.ropeSoftBody.m_anchors.pop_back()
-					break;
-
-				case "KeyP":
-					if(armBrickCollision===false)     //stop when hot the brick
-					{
-					armPos -=0.01
-					}  
-					// this.leftArm.body.applyForceX(1)
-					// this.rightArm.body.applyForceX(-1)
-					break;
-
-				case "Semicolon":
-					armPos +=0.01
-					// this.leftArm.body.applyForceX(-1)
-					// this.rightArm.body.applyForceX(1)
-					break; 
-
-				case "Enter": 
-					this.brick = this.addBrick(
-					{
-						x:this.ropeSoftBody.m_nodes.at((ropeBodyUse === true ) ? ropeNumSegmentsY : 0).m_x.x(), 
-						y:this.ropeSoftBody.m_nodes.at((ropeBodyUse === true ) ? ropeNumSegmentsY : 0).m_x.y(), 
-						z:this.ropeSoftBody.m_nodes.at((ropeBodyUse === true ) ? ropeNumSegmentsY : 0).m_x.z()-0.03*4
-					}, 
-					{
-						x: 5,
-						y: 2, 
-						z: 1
-					}, 
-					4,
-					0
-					);
-					console.log(this.brick.rotation)
-					brickSpawn = true;
-					this.brick.body.on.collision((otherObject, event) => {
-					if (otherObject.name !== 'ground')
-					{
-						if(otherObject.name === 'leftArm' && event === 'collision')
-						{
-						leftArmCollision = true;
-						// sendMessage("collision \o/ avec le bras gauche")		// TODO send message with websocket
-						}
-						else if(otherObject.name === 'leftArm' && event === 'end')
-						{
-						leftArmCollision = false;
-						}
-						if(otherObject.name === 'rightArm' && event === 'collision')
-						{
-						rightArmCollision = true;
-						// sendMessage("collision \o/ avec le bras droit")
-						}
-						else if(otherObject.name === 'rightArm' && event === 'end')
-						{
-						rightArmCollision = false;
-						}
-
-						if(leftArmCollision === true && rightArmCollision === true)
-						{
-						armBrickCollision = true
-						// ws.send("collision \o/ avec les deux bras")
-						}
-						else
-						{
-						armBrickCollision = false
-						}
 					}
-					})
-					this.ropeSoftBody.appendAnchor((ropeBodyUse === true ) ? ropeNumSegmentsY : 0, this.brick.body.ammo, false, 1)
-				break;
-
-				case "+":
-				case "NumpadAdd":
-					pulleyRotValue += 0.01 
-				break;
-
-				case "-":
-				case "NumpadSubtract":
-					pulleyRotValue -= 0.01           
-				break;
 				}
 			}
-			);
+
+			// this.brickWall[4].body.ammo.setCollisionFlags(0) 	// we can change collision flag during the simulation
+
+			this.brickWallDone = true
+		}
+		collisionFlagsSet(collisionFlags)
+		{
+			for(let i = 0; i < 4; i++)
+			{
+				for(let j = 0; j < 3; j++)
+				{
+					if(!( i == 3 && j == 0))
+					{
+						this.brickWall[i*3+j].body.ammo.setCollisionFlags(collisionFlags)
+					}
+				}
+			}
 		}
 
+		createParalellepiped( sx, sy, sz, mass, pos, quat, material ) {
+
+			const threeObject = new THREE.Mesh( new THREE.BoxGeometry( sx, sy, sz, 1, 1, 1 ), material );
+			const shape = new Ammo.btBoxShape( new Ammo.btVector3( sx * 0.5, sy * 0.5, sz * 0.5 ) );
+			shape.setMargin( 0.05 );
+
+			this.createRigidBody( threeObject, shape, mass, pos, quat );
+
+			return threeObject;
+
+		}
+
+		createRigidBody( threeObject, physicsShape, mass, pos, quat ) {
+
+			threeObject.position.copy( pos );
+			threeObject.quaternion.copy( quat );
+
+			const transform = new Ammo.btTransform();
+			transform.setIdentity();
+			transform.setOrigin( new Ammo.btVector3( pos.x, pos.y, pos.z ) );
+			transform.setRotation( new Ammo.btQuaternion( quat.x, quat.y, quat.z, quat.w ) );
+			const motionState = new Ammo.btDefaultMotionState( transform );
+
+			const localInertia = new Ammo.btVector3( 0, 0, 0 );
+			physicsShape.calculateLocalInertia( mass, localInertia );
+
+			const rbInfo = new Ammo.btRigidBodyConstructionInfo( mass, motionState, physicsShape, localInertia );
+			const body = new Ammo.btRigidBody( rbInfo );
+
+			threeObject.userData.physicsBody = body;
+
+			this.scene.add( threeObject );
+
+			if ( mass > 0 ) {
+				this.rigidBodies.push( threeObject );
+
+				// Disable deactivation
+				body.setActivationState( 4 );
+			}
+			this.physics.addExisting( body );
+		}
 
 	}
 	PhysicsLoader('../lib/ammo/kripken', () => new Project({ gravity: { x: 0, y: 0, z: -9.81 }, scenes: [MainScene], softBodies: true }))
